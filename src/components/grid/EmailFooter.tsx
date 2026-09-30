@@ -1,58 +1,39 @@
 import { useRef } from 'react'
-import { gsap, useGSAP } from '@/lib/gsap'
+import { ScrollTrigger, useGSAP, prefersReducedMotion } from '@/lib/gsap'
 import { navigate } from '@/lib/router'
+import { useTextScramble } from '@/hooks/useTextScramble'
 import { site } from '@/data/site'
 import Label from '@/components/ui/Label'
 import RollText from '@/components/ui/RollText'
 
-const [user, domain] = site.email.split('@')
-
 /**
- * Compact footer. When it comes into view, the email's name and domain fly in
- * from opposite edges and meet in the middle. At rest the address is always whole.
+ * Compact footer. The email decodes through random characters when it
+ * scrolls into view (the scramble from her original site) and again on hover.
  */
 export default function EmailFooter() {
-  const footer = useRef<HTMLElement>(null)
-  const row = useRef<HTMLDivElement>(null)
-  const left = useRef<HTMLSpanElement>(null)
-  const right = useRef<HTMLSpanElement>(null)
+  const link = useRef<HTMLAnchorElement>(null)
+  const { displayText, trigger } = useTextScramble({ text: site.email, charDelay: 40, cycleSpeed: 35 })
+  const reduced = prefersReducedMotion()
 
   useGSAP(() => {
-    const l = left.current!
-    const r = right.current!
-    // Time-based rather than scrubbed, so the merge always completes even when
-    // the page can't scroll any further
-    gsap
-      .timeline({
-        scrollTrigger: {
-          trigger: footer.current,
-          start: 'top 85%',
-          toggleActions: 'play none none reverse',
-          invalidateOnRefresh: true,
-        },
-        defaults: { duration: 1.4, ease: 'expo.inOut' },
-      })
-      // offsetLeft is measured from the row (the positioned parent) and ignores transforms
-      .from(l, { x: () => -l.offsetLeft }, 0)
-      .from(r, { x: () => row.current!.clientWidth - r.offsetLeft - r.offsetWidth }, 0)
-  })
+    if (reduced) return
+    ScrollTrigger.create({ trigger: link.current, start: 'top 92%', once: true, onEnter: trigger })
+  }, [trigger])
 
   return (
-    <footer ref={footer} className="border-t border-ink px-4 pt-5 pb-5 md:px-5">
+    <footer className="border-t border-ink px-4 pt-5 pb-5 md:px-5">
       <Label>Contact</Label>
 
-      <div
-        ref={row}
-        className="relative my-14 flex justify-center text-[clamp(28px,5.2vw,100px)] font-medium tracking-[-0.05em] whitespace-nowrap md:my-20"
-      >
-        {/* One link, so hovering anywhere rolls both halves together */}
-        <a href={`mailto:${site.email}`} aria-label={site.email} className="group flex">
-          <span ref={left}>
-            <RollText text={user} />
-          </span>
-          <span ref={right}>
-            <RollText text={`@${domain}`} />
-          </span>
+      <div className="my-14 flex justify-center md:my-20">
+        <a
+          ref={link}
+          href={`mailto:${site.email}`}
+          aria-label={site.email}
+          onMouseEnter={() => !reduced && trigger()}
+          className="group relative text-[clamp(28px,5.2vw,100px)] leading-[1.1] font-medium tracking-[-0.05em] whitespace-nowrap"
+        >
+          <span aria-hidden>{reduced ? site.email : displayText || ' '}</span>
+          <span className="absolute inset-x-0 -bottom-1 h-[0.06em] origin-left scale-x-0 bg-ink transition-transform duration-500 ease-out-expo group-hover:scale-x-100" />
         </a>
       </div>
 

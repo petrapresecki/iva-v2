@@ -3,6 +3,7 @@ import Showcase from '@/components/showcase/Showcase'
 import WorkReveal from '@/components/effects/WorkReveal'
 import Goo from '@/components/ui/Goo'
 import Label from '@/components/ui/Label'
+import RollText from '@/components/ui/RollText'
 import { getLenis } from '@/lib/lenis'
 import { navigate } from '@/lib/router'
 import { projects } from '@/data/projects'
@@ -33,17 +34,26 @@ export default function HeroGrid({ paused }: { paused: boolean }) {
     <section className="border-b border-ink">
       <div className="grid grid-cols-1 md:h-svh md:grid-cols-4 md:grid-rows-[58fr_42fr]">
         <div className="flex min-h-[62svh] flex-col justify-between border-b border-ink px-4 pt-20 pb-4 md:col-span-2 md:min-h-0 md:border-r md:px-5 md:pt-24 md:pb-5">
-          <Label>
-            {site.role} — {site.location}
-          </Label>
-          <h1 className="text-[clamp(68px,9.8vw,180px)] leading-[0.84] font-medium tracking-[-0.055em]">
-            <Goo as="span" immediate delay={0.3} className="block">
-              Iva
+          <Label>Portfolio 2025—26</Label>
+          <div>
+            {/* Her name lives in the nav; the hero introduces her instead of repeating it */}
+            <Goo
+              as="h1"
+              immediate
+              delay={0.3}
+              className="max-w-[17ch] text-balance text-[clamp(34px,3.9vw,68px)] leading-[1.02] font-medium tracking-[-0.04em]"
+            >
+              {site.intro}
             </Goo>
-            <Goo as="span" immediate delay={0.42} className="block">
-              Presečki
-            </Goo>
-          </h1>
+            <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-ink pt-3 md:mt-10">
+              {site.facts.map(fact => (
+                <div key={fact.label}>
+                  <dt className="caption text-gray">{fact.label}</dt>
+                  <dd className="mt-1 text-[15px] leading-tight font-medium md:text-[16px]">{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </div>
 
         <Showcase
@@ -74,17 +84,22 @@ export default function HeroGrid({ paused }: { paused: boolean }) {
           </span>
         </button>
 
-        <div className="flex min-h-[34svh] flex-col justify-between gap-8 border-ink bg-accent px-4 py-4 md:min-h-0 md:border-r md:px-5 md:py-5">
-          <p className="text-[20px] leading-[1.15] font-medium tracking-[-0.02em] md:text-[clamp(18px,1.6vw,26px)]">
-            Branding, packaging, motion and 3D, integrating animation, 3D and classic 2D practices into cohesive
-            product presentations.
-          </p>
-          <button
-            onClick={() => getLenis()?.scrollTo('#work', { duration: 1.4 })}
-            className="caption flex items-center justify-between border-t border-ink pt-3 text-left"
-          >
-            Scroll for work <span aria-hidden>↓</span>
-          </button>
+        {/* A friendly teaser for the About page */}
+        <div className="flex min-h-[34svh] flex-col justify-between gap-6 border-ink bg-accent px-4 py-4 md:min-h-0 md:border-r md:px-5 md:py-5">
+          <div>
+            <p className="text-[clamp(44px,4.6vw,84px)] leading-[0.9] font-medium tracking-[-0.05em]">{site.greeting}</p>
+            <p className="mt-4 max-w-[30ch] text-[16px] leading-snug font-medium md:text-[clamp(15px,1.15vw,19px)]">
+              {site.hello}
+            </p>
+          </div>
+          <div className="caption flex items-center justify-between border-t border-ink pt-3">
+            <button onClick={() => navigate('/about')} className="group">
+              <RollText text="About me →" />
+            </button>
+            <button onClick={() => getLenis()?.scrollTo('#work', { duration: 1.4 })} className="group">
+              <RollText text="Work ↓" />
+            </button>
+          </div>
         </div>
       </div>
     </section>

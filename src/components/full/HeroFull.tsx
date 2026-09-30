@@ -11,14 +11,15 @@ export default function HeroFull({ paused }: { paused: boolean }) {
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-6 px-4 pb-4 text-white md:px-5 md:pb-5">
-        <h1 className="text-[clamp(56px,9.4vw,176px)] leading-[0.84] font-medium tracking-[-0.055em]">
-          <Goo as="span" immediate delay={0.4} className="block">
-            Iva
-          </Goo>
-          <Goo as="span" immediate delay={0.52} className="block">
-            Presečki
-          </Goo>
-        </h1>
+        {/* Her name lives in the nav; the hero introduces her instead of repeating it */}
+        <Goo
+          as="h1"
+          immediate
+          delay={0.4}
+          className="max-w-[16ch] text-balance text-[clamp(34px,4.2vw,76px)] leading-[1.02] font-medium tracking-[-0.04em]"
+        >
+          {site.intro}
+        </Goo>
         <div className="caption hidden flex-col items-end gap-1 text-right md:flex">
           <span>
             {site.role} — {site.location}

@@ -7,10 +7,13 @@ import { getLenis } from '@/lib/lenis'
 import { navigate } from '@/lib/router'
 import { projects, type Project } from '@/data/projects'
 
-const CARDS = projects.flatMap(project => project.cards.map(src => ({ src, project })))
+// Every still appears exactly once, dealt round-robin so neighbours come from different projects
+const CARDS = Array.from({ length: Math.max(...projects.map(p => p.cards.length)) }, (_, i) =>
+  projects.filter(p => p.cards[i]).map(project => ({ src: project.cards[i], project })),
+).flat()
 // A spiral staircase of her work: upright cards facing outward on a vertical helix.
 // The helix is periodic, so cards can flow up it forever and wrap back to the bottom.
-const COUNT = 30
+const COUNT = CARDS.length
 const PER_TURN = 9
 const STEP = (Math.PI * 2) / PER_TURN
 const RISE = 0.42
@@ -102,9 +105,8 @@ function Swirl({ fill, highlight, onHover }: SwirlProps) {
 
   const items = useMemo(() => {
     const rand = seeded(7)
-    // Step through the cards so neighbours on the spiral come from different projects
     return Array.from({ length: COUNT }, (_, i) => ({
-      card: CARDS[(i * 5) % CARDS.length],
+      card: CARDS[i],
       seq: i,
       push: 0,
       phase: rand() * Math.PI * 2,

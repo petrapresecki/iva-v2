@@ -49,7 +49,7 @@ export const projects: Project[] = [
       video('/videos/rool/rool-poster-anim.mp4', '608 / 1080'),
       video('/videos/rool/rool-mp3-tile.mp4', '858 / 1080'),
     ],
-    cards: cards('rool', 6),
+    cards: cards('rool', 8),
     gallery: [
       [video('/videos/rool/rool-mp3-tile.mp4', '3 / 4'), video('/videos/rool/rool-carousel.mp4', '3 / 4')],
       [video('/videos/rool/rool-poster-klub.mp4', '3 / 4'), video('/videos/rool/rool-distortion.mp4', '3 / 4')],
@@ -77,7 +77,7 @@ export const projects: Project[] = [
       video('/videos/apuro/apuro-splash.mp4', '4 / 5'),
       video('/videos/apuro/apuro-typography.mp4', '1 / 1'),
     ],
-    cards: cards('apuro', 6),
+    cards: cards('apuro', 8),
     gallery: [
       [
         image('/images/apuro/apuro-bottles-hero.webp', '3 / 4', 'Apuro bottles with apples'),
@@ -113,7 +113,7 @@ export const projects: Project[] = [
       image('/images/booklet/booklet-spread-6.jpg', '13 / 10', 'Booklet spread'),
       image('/images/booklet/booklet-ocean.webp', '16 / 9', 'Booklet by the ocean'),
     ],
-    cards: cards('booklet', 5),
+    cards: cards('booklet', 7),
     gallery: [
       [image('/images/booklet/booklet-ocean.webp', '16 / 9', 'Booklet by the ocean')],
       ...[
@@ -150,7 +150,7 @@ export const projects: Project[] = [
       video('/videos/gabagool/gabagool-type-tiles.mp4', '1 / 1'),
       video('/videos/gabagool/gabagool-blobs-motion.mp4', '858 / 1080'),
     ],
-    cards: cards('gabagool', 5),
+    cards: cards('gabagool', 7),
     gallery: [
       [
         video('/videos/gabagool/gabagool-rotacija-3d.mp4', '3 / 4'),

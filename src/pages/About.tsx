@@ -27,6 +27,15 @@ export default function About() {
       </section>
 
       <section className="mt-[18vh] grid gap-y-8 md:grid-cols-12">
+        <Label className="md:col-span-3 md:pt-5">Currently at</Label>
+        <div className="border-t border-b border-ink py-4 md:col-span-9">
+          <Goo as="span" className={`block ${BODY}`}>
+            {site.currentlyAt}
+          </Goo>
+        </div>
+      </section>
+
+      <section className="mt-[18vh] grid gap-y-8 md:grid-cols-12">
         <Label className="md:col-span-3 md:pt-5">Exhibitions</Label>
         <ul className="md:col-span-9">
           {site.exhibitions.map(item => (
