@@ -11,7 +11,7 @@ export default function HeroFull({ paused }: { paused: boolean }) {
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-6 px-4 pb-4 text-white md:px-5 md:pb-5">
-        <h1 className="font-display text-[clamp(56px,9vw,168px)] leading-[0.84] font-semibold tracking-[-0.03em]">
+        <h1 className="text-[clamp(56px,9.4vw,176px)] leading-[0.84] font-medium tracking-[-0.055em]">
           <Goo as="span" immediate delay={0.4} className="block">
             Iva
           </Goo>

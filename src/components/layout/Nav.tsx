@@ -38,7 +38,7 @@ export default function Nav({ page }: NavProps) {
       transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
       className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 py-4 text-white mix-blend-difference md:px-5 md:py-5"
     >
-      <button onClick={() => navigate('/')} className="pointer-events-auto font-display text-[15px] font-semibold tracking-[0.03em] md:text-[18px]">
+      <button onClick={() => navigate('/')} className="pointer-events-auto text-[15px] font-semibold tracking-[0.01em] md:text-[17px]">
         IVA PRESEČKI
       </button>
       <nav className="pointer-events-auto flex gap-2">

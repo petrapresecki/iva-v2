@@ -8,9 +8,8 @@
   --color-mist: #ececec;
   --color-gray: #8a8a8a;
 
-  /* Fonts: grotesk for everything, Clash Display only for her name */
+  /* Fonts */
   --font-sans: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-display: "Clash Display", sans-serif;
 
   /* Motion */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

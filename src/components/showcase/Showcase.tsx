@@ -8,9 +8,16 @@ import { navigate } from '@/lib/router'
 import { projects, type Project } from '@/data/projects'
 
 const CARDS = projects.flatMap(project => project.cards.map(src => ({ src, project })))
-const COUNT = 48
-const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
-const BASE_TILT = -0.42
+// A spiral staircase of her work: upright cards facing outward on a vertical helix.
+// The helix is periodic, so cards can flow up it forever and wrap back to the bottom.
+const COUNT = 30
+const PER_TURN = 9
+const STEP = (Math.PI * 2) / PER_TURN
+const RISE = 0.42
+const RADIUS = 3.4
+const CARD = 1.55
+const LEAN = -0.16
+const BASE_TILT_X = 0.12
 const BG = '#0c0c0c'
 
 const vertexShader = /* glsl */ `
@@ -37,6 +44,8 @@ const vertexShader = /* glsl */ `
 const fragmentShader = /* glsl */ `
   uniform sampler2D uMap;
   uniform float uFade;
+  uniform float uDim;
+  uniform float uEdge;
   varying vec2 vUv;
   varying float vDepth;
 
@@ -47,10 +56,12 @@ const fragmentShader = /* glsl */ `
     if (length(max(abs(p) - b, 0.0)) > 0.035) discard;
 
     vec3 color = texture2D(uMap, vUv).rgb;
-    // Cards further back sink into the dark
-    float fog = smoothstep(11.5, 15.0, vDepth);
-    color = mix(color, vec3(0.004), fog * 0.6);
-    color = mix(vec3(0.004), color, uFade);
+    // Backs of the far cards would show the image mirrored, so render them as dark, muted shadows
+    if (!gl_FrontFacing) color = mix(vec3(dot(color, vec3(0.299, 0.587, 0.114))), color, 0.3) * 0.28;
+    // Cards on the far side of the spiral sink into the dark
+    float fog = smoothstep(9.5, 15.5, vDepth);
+    color = mix(color, vec3(0.004), fog * 0.78);
+    color = mix(vec3(0.004), color, uFade * uDim * uEdge);
     gl_FragColor = vec4(color, 1.0);
     #include <colorspace_fragment>
   }
@@ -71,10 +82,11 @@ const damp = THREE.MathUtils.damp
 
 interface SwirlProps {
   fill: boolean
+  highlight: React.RefObject<string | null>
   onHover: (project: Project | null) => void
 }
 
-function Swirl({ fill, onHover }: SwirlProps) {
+function Swirl({ fill, highlight, onHover }: SwirlProps) {
   const textures = useLoader(
     THREE.TextureLoader,
     CARDS.map(card => card.src),
@@ -82,7 +94,7 @@ function Swirl({ fill, onHover }: SwirlProps) {
   const { viewport, gl } = useThree()
   const group = useRef<THREE.Group>(null!)
   const meshes = useRef<THREE.Mesh[]>([])
-  const motion = useRef({ spin: 0, vel: 0, timeScale: 1, hovered: -1, flying: -1, dragging: false, lastX: 0, moved: 0 })
+  const motion = useRef({ flow: 0, vel: 0, timeScale: 1, hovered: -1, flying: -1, dragging: false, lastX: 0, moved: 0 })
   const reduced = useMemo(() => prefersReducedMotion(), [])
 
   const shared = useMemo(() => ({ uTime: { value: 0 }, uBend: { value: 0 } }), [])
@@ -90,18 +102,13 @@ function Swirl({ fill, onHover }: SwirlProps) {
 
   const items = useMemo(() => {
     const rand = seeded(7)
-    return Array.from({ length: COUNT }, (_, i) => {
-      const card = CARDS[(i * 5) % CARDS.length]
-      return {
-        card,
-        angle: i * GOLDEN_ANGLE,
-        radius: 0.35 + 0.6 * Math.sqrt(i + 1),
-        z: -i * 0.04,
-        size: 1.45 - (i / COUNT) * 0.65 + rand() * 0.25,
-        tilt: (rand() - 0.5) * 0.8,
-        phase: rand() * Math.PI * 2,
-      }
-    })
+    // Step through the cards so neighbours on the spiral come from different projects
+    return Array.from({ length: COUNT }, (_, i) => ({
+      card: CARDS[(i * 5) % CARDS.length],
+      seq: i,
+      push: 0,
+      phase: rand() * Math.PI * 2,
+    }))
   }, [])
 
   const materials = useMemo(
@@ -113,9 +120,13 @@ function Swirl({ fill, onHover }: SwirlProps) {
         return new THREE.ShaderMaterial({
           vertexShader,
           fragmentShader,
+          // Cards on the far side face away, but should still show (dimmed) through the gaps
+          side: THREE.DoubleSide,
           uniforms: {
             uMap: { value: map },
             uFade: { value: 1 },
+            uDim: { value: 1 },
+            uEdge: { value: 1 },
             uHover: { value: 0 },
             uPhase: { value: item.phase },
             uTime: shared.uTime,
@@ -140,7 +151,7 @@ function Swirl({ fill, onHover }: SwirlProps) {
       const dx = e.clientX - m.lastX
       m.lastX = e.clientX
       m.moved += Math.abs(dx)
-      m.vel = clamp(m.vel + dx * 0.004, -3, 3)
+      m.vel = clamp(m.vel + dx * 0.012, -6, 6)
     }
     const up = () => (m.dragging = false)
     el.addEventListener('pointerdown', down)
@@ -209,41 +220,53 @@ function Swirl({ fill, onHover }: SwirlProps) {
     const m = motion.current
 
     if (!reduced) {
-      // Page scroll feeds the spin, like pushing a record
-      m.vel = clamp(m.vel + (getLenis()?.velocity ?? 0) * 0.00035, -3, 3)
-      m.vel *= Math.pow(0.92, dt * 60)
-      m.timeScale = damp(m.timeScale, m.hovered >= 0 ? 0.25 : 1, 4, dt)
-      m.spin += (0.1 + m.vel) * dt * m.timeScale
+      // Page scroll and dragging push the cards along the spiral (in cards per second)
+      m.vel = clamp(m.vel + (getLenis()?.velocity ?? 0) * 0.0012, -6, 6)
+      m.vel *= Math.pow(0.93, dt * 60)
+      m.timeScale = damp(m.timeScale, m.hovered >= 0 || highlight.current ? 0.2 : 1, 4, dt)
+      m.flow += (0.32 + m.vel) * dt * m.timeScale
       shared.uTime.value += dt * m.timeScale
-      shared.uBend.value = damp(shared.uBend.value, clamp(m.vel * 0.25, -0.3, 0.3), 6, dt)
     }
+    // Cards hug the cylinder at rest and bend further with speed
+    shared.uBend.value = damp(shared.uBend.value, clamp(-0.1 - m.vel * 0.05, -0.35, 0.2), 6, dt)
 
-    // Tilt the whole swirl toward the pointer so you can look around it
-    group.current.rotation.x = damp(group.current.rotation.x, BASE_TILT - state.pointer.y * 0.18, 3, dt)
+    // Lean the spiral a little and let the pointer tilt it, so you can look around
+    group.current.rotation.x = damp(group.current.rotation.x, BASE_TILT_X - state.pointer.y * 0.12, 3, dt)
     group.current.rotation.y = damp(group.current.rotation.y, state.pointer.x * 0.25, 3, dt)
+    group.current.rotation.z = LEAN
 
     meshes.current.forEach((mesh, k) => {
       const mat = materials[k]
+      const item = items[k]
       const isHovered = k === m.hovered
+      // Highlighting a project (from the index) dims every other card
+      const lit = !highlight.current || item.card.project.id === highlight.current
       mat.uniforms.uHover.value = damp(mat.uniforms.uHover.value, isHovered ? 1 : 0, 8, dt)
+      mat.uniforms.uDim.value = damp(mat.uniforms.uDim.value, lit ? 1 : 0.18, 6, dt)
       if (k === m.flying) return
 
-      const item = items[k]
-      // Inner cards orbit faster, which gives the vortex its swirl
-      const a = item.angle + m.spin * (0.6 + 1.2 / (0.6 + item.radius))
-      mesh.position.x = Math.cos(a) * item.radius
-      mesh.position.y = Math.sin(a) * item.radius
-      mesh.position.z = damp(mesh.position.z, item.z + (isHovered ? 1.2 : 0), 8, dt)
-      mesh.rotation.z = a + Math.PI / 2 + item.tilt
-      const s = damp(mesh.scale.x, item.size * (isHovered ? 1.15 : 1), 8, dt)
+      // Position along the (periodic) helix, flowing upward over time
+      const t = (((item.seq + m.flow) % COUNT) + COUNT) % COUNT
+      const a = t * STEP
+      item.push = damp(item.push, isHovered ? 0.7 : 0, 8, dt)
+      const r = RADIUS + item.push
+      mesh.position.set(Math.sin(a) * r, (t - COUNT / 2) * RISE, Math.cos(a) * r)
+      mesh.rotation.set(0, a, 0)
+      // Fade out at both ends so the wrap from top to bottom is invisible
+      mat.uniforms.uEdge.value = THREE.MathUtils.smoothstep(COUNT / 2 - Math.abs(t - COUNT / 2), 0, 3)
+      const boost = isHovered ? 1.12 : highlight.current && lit ? 1.05 : 1
+      const s = damp(mesh.scale.x, CARD * boost, 8, dt)
       mesh.scale.set(s, s, 1)
     })
   })
 
-  const fit = (Math.min(viewport.width, viewport.height) / 10) * (fill ? 1.25 : 1.05)
+  // Fit the spiral's width (2 × radius + a card) into the container; in the full-screen
+  // hero it sits right of centre so her name has room on the left
+  const fit = Math.min(viewport.width / 9.2, 1.05)
+  const offset = fill && viewport.width > viewport.height ? viewport.width * 0.14 : 0
 
   return (
-    <group ref={group} scale={fit}>
+    <group ref={group} scale={fit} position={[offset, 0, 0]}>
       {items.map((_, k) => (
         <mesh
           key={k}
@@ -275,15 +298,28 @@ interface ShowcaseProps {
   paused?: boolean
   className?: string
   hint?: boolean
+  // Project id whose cards stay lit while the rest dim
+  highlight?: string | null
 }
 
-export default function Showcase({ fill = false, paused = false, className = '', hint = true }: ShowcaseProps) {
+export default function Showcase({
+  fill = false,
+  paused = false,
+  className = '',
+  hint = true,
+  highlight = null,
+}: ShowcaseProps) {
   const wrap = useRef<HTMLDivElement>(null)
   const label = useRef<HTMLDivElement>(null)
   const pill = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState<Project | null>(null)
   const [lastHovered, setLastHovered] = useState<Project | null>(null)
   const [visible, setVisible] = useState(true)
+  const highlightRef = useRef<string | null>(highlight)
+
+  useEffect(() => {
+    highlightRef.current = highlight
+  }, [highlight])
 
   // Only render while on screen
   useEffect(() => {
@@ -325,7 +361,7 @@ export default function Showcase({ fill = false, paused = false, className = '',
       >
         <color attach="background" args={[BG]} />
         <Suspense fallback={null}>
-          <Swirl fill={fill} onHover={onHover} />
+          <Swirl fill={fill} highlight={highlightRef} onHover={onHover} />
         </Suspense>
       </Canvas>
 

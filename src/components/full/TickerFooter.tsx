@@ -50,7 +50,7 @@ export default function TickerFooter() {
 
       {/* Giant wordmark, cut off by the bottom edge */}
       <div className="mt-16 h-[15.5vw] overflow-hidden pt-[3vw]">
-        <FitText text="IVA PRESEČKI" className="px-2 font-display font-semibold tracking-[-0.02em]" />
+        <FitText text="IVA PRESEČKI" className="px-2 font-medium tracking-[-0.055em]" />
       </div>
     </footer>
   )

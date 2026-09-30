@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react'
 import { prefersReducedMotion } from '@/lib/gsap'
 
 /**
- * Aspen-style background: drifting fbm noise dithered into 2px black/white
- * dots, with a small fluid sim that leaves a green trail behind the pointer.
- * Solid grid cells sit on top; transparent cells act as windows onto it.
+ * Her work printed as 2px black-and-white dots (ordered dither). A small fluid
+ * sim follows the pointer and its trail reveals the real image underneath,
+ * with a green fringe. Slides dissolve dot by dot from one project to the next.
  */
 
 const VERT = `#version 300 es
@@ -62,40 +62,37 @@ void main() {
 const DISPLAY = `#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
-uniform sampler2D uDye; uniform vec2 uRes; uniform float uTime;
+uniform sampler2D uDye; uniform sampler2D uFrom; uniform sampler2D uTo;
+uniform vec2 uRes; uniform float uMix; uniform float uFromAspect; uniform float uToAspect;
 uniform vec3 uInk; uniform vec3 uPaper; uniform vec3 uAccent;
 
-vec2 hash(vec2 p) {
-  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-  return -1.0 + 2.0 * fract(sin(p) * 43758.5453);
-}
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(dot(hash(i), f), dot(hash(i + vec2(1, 0)), f - vec2(1, 0)), u.x),
-             mix(dot(hash(i + vec2(0, 1)), f - vec2(0, 1)), dot(hash(i + vec2(1, 1)), f - vec2(1, 1)), u.x), u.y);
-}
-float fbm(vec2 p) {
-  float v = 0.0, a = 0.5;
-  for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.0; a *= 0.5; }
-  return v * 0.5 + 0.5;
-}
 float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
 float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
 float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
 
+// object-fit: cover
+vec2 cover(vec2 uv, float imageAspect) {
+  float boxAspect = uRes.x / uRes.y;
+  vec2 scale = boxAspect > imageAspect ? vec2(1.0, imageAspect / boxAspect) : vec2(boxAspect / imageAspect, 1.0);
+  return (uv - 0.5) * scale + 0.5;
+}
+
 void main() {
   vec2 cell = floor(gl_FragCoord.xy / 2.0);
-  vec2 uv = cell * 2.0 / uRes;
-  vec2 q = uv * vec2(uRes.x / uRes.y, 1.0) * 3.0;
-  float t = uTime * 0.03;
-  float n = fbm(q + fbm(q + t) * 0.5 - t);
-  n = pow(smoothstep(0.28, 0.72, n), 1.2);
-  float shade = mix(0.533, 0.878, n);
+  vec2 uv = (cell * 2.0 + 1.0) / uRes;
   float threshold = bayer8(cell);
-  vec3 color = step(0.93 - shade, threshold) > 0.5 ? uPaper : uInk;
+
+  // Dot-by-dot dissolve between projects
+  vec3 image = threshold < uMix
+    ? texture(uTo, cover(uv, uToAspect)).rgb
+    : texture(uFrom, cover(uv, uFromAspect)).rgb;
+  float lum = clamp(pow(dot(image, vec3(0.299, 0.587, 0.114)), 0.75) * 1.08, 0.0, 1.0);
+  vec3 color = lum > threshold ? uPaper : uInk;
+
+  // The pointer trail reveals the real image, edged in green
   float dye = texture(uDye, uv).r;
-  color = mix(color, uAccent, step(threshold, dye));
+  if (threshold < dye * 1.8) color = image;
+  else if (threshold < dye * 3.0) color = uAccent;
   o = vec4(color, 1.0);
 }`
 
@@ -104,8 +101,23 @@ type Target = { tex: WebGLTexture; fbo: WebGLFramebuffer; w: number; h: number }
 
 const rgb = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
 
-export default function DitherTrail({ className = '' }: { className?: string }) {
+interface WorkRevealProps {
+  slides: string[]
+  // Seconds each slide holds, including its dissolve
+  interval?: number
+  onSlide?: (index: number) => void
+  className?: string
+}
+
+const DISSOLVE = 1.2
+
+export default function WorkReveal({ slides, interval = 4.5, onSlide, className = '' }: WorkRevealProps) {
   const canvas = useRef<HTMLCanvasElement>(null)
+  const onSlideRef = useRef(onSlide)
+
+  useEffect(() => {
+    onSlideRef.current = onSlide
+  }, [onSlide])
 
   useEffect(() => {
     const el = canvas.current!
@@ -208,6 +220,23 @@ export default function DitherTrail({ className = '' }: { className?: string }) 
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
 
+    // Project images as textures (flipped so uv.y points up, like the sim)
+    const images: { tex: WebGLTexture; aspect: number }[] = []
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    slides.forEach((src, i) => {
+      const img = new Image()
+      img.onload = () => {
+        const tex = gl.createTexture()!
+        gl.bindTexture(gl.TEXTURE_2D, tex)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+        images[i] = { tex, aspect: img.width / img.height }
+      }
+      img.src = src
+    })
+
     // Pointer splats queued between frames
     const splats: { x: number; y: number; dx: number; dy: number }[] = []
     let last: { x: number; y: number } | null = null
@@ -229,6 +258,8 @@ export default function DitherTrail({ className = '' }: { className?: string }) 
     let raf = 0
     let prev = performance.now()
     let time = 0
+    let shown = -1
+    const cycling = !prefersReducedMotion()
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
@@ -286,9 +317,26 @@ export default function DitherTrail({ className = '' }: { className?: string }) 
         dye.swap()
       }
 
+      // Which slides are dissolving into each other right now
+      const n = slides.length
+      const clock = cycling ? time : 0
+      const from = Math.floor(clock / interval) % n
+      const to = (from + 1) % n
+      const mix = Math.min(1, Math.max(0, (clock % interval) - (interval - DISSOLVE)) / DISSOLVE)
+      const current = mix > 0.5 ? to : from
+      if (current !== shown) {
+        shown = current
+        onSlideRef.current?.(current)
+      }
+      if (!images[from] || !images[to]) return
+
       gl.useProgram(display.program)
       gl.uniform2f(display.uniforms.uRes, el.width, el.height)
-      gl.uniform1f(display.uniforms.uTime, prefersReducedMotion() ? 0 : time)
+      gl.uniform1f(display.uniforms.uMix, mix)
+      gl.uniform1f(display.uniforms.uFromAspect, images[from].aspect)
+      gl.uniform1f(display.uniforms.uToAspect, images[to].aspect)
+      gl.uniform1i(display.uniforms.uFrom, bindTexture(1, images[from].tex))
+      gl.uniform1i(display.uniforms.uTo, bindTexture(2, images[to].tex))
       gl.uniform3f(display.uniforms.uInk, ink[0], ink[1], ink[2])
       gl.uniform3f(display.uniforms.uPaper, paper[0], paper[1], paper[2])
       gl.uniform3f(display.uniforms.uAccent, accent[0], accent[1], accent[2])
@@ -303,7 +351,7 @@ export default function DitherTrail({ className = '' }: { className?: string }) 
       resizeObserver.disconnect()
       intersection.disconnect()
     }
-  }, [])
+  }, [slides, interval])
 
   return <canvas ref={canvas} aria-hidden className={`block [image-rendering:pixelated] ${className}`} />
 }

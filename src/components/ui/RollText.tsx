@@ -8,7 +8,8 @@ interface RollTextProps {
  */
 export default function RollText({ text, className = '' }: RollTextProps) {
   return (
-    <span className={`relative inline-flex overflow-hidden ${className}`} aria-label={text}>
+    // Line height keeps ascenders and descenders inside the clip while letters roll
+    <span className={`relative inline-flex overflow-hidden leading-[1.2] ${className}`} aria-label={text}>
       {[...text].map((char, i) => (
         <span
           key={i}

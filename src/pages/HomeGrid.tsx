@@ -1,7 +1,7 @@
 import HeroGrid from '@/components/grid/HeroGrid'
 import Statement from '@/components/grid/Statement'
 import WorkGrid from '@/components/grid/WorkGrid'
-import CornerFooter from '@/components/grid/CornerFooter'
+import EmailFooter from '@/components/grid/EmailFooter'
 
 // Grid version: Aspen grid hero, Bleibtgleich typography, Aspen work grid
 export default function HomeGrid({ paused }: { paused: boolean }) {
@@ -10,7 +10,7 @@ export default function HomeGrid({ paused }: { paused: boolean }) {
       <HeroGrid paused={paused} />
       <Statement />
       <WorkGrid />
-      <CornerFooter />
+      <EmailFooter />
     </>
   )
 }

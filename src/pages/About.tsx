@@ -12,7 +12,7 @@ export default function About() {
         as="h1"
         immediate
         delay={0.4}
-        className="font-display text-[clamp(110px,24vw,420px)] leading-[0.82] font-semibold tracking-[-0.03em]"
+        className="text-[clamp(110px,24vw,420px)] leading-[0.82] font-medium tracking-[-0.065em]"
       >
         {site.greeting}
       </Goo>
