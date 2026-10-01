@@ -4,24 +4,14 @@ import { navigate } from '@/lib/router'
 import { projects } from '@/data/projects'
 import Media from '@/components/ui/Media'
 import RollText from '@/components/ui/RollText'
+import WorkHeading from './WorkHeading'
 
-export default function WorkGrid() {
+/** Aspen-style rows: a title cell plus three snippets per project, split by 1px lines. */
+export default function WorkRows() {
   const root = useRef<HTMLElement>(null)
 
   useGSAP(
     () => {
-      // "Work … 25—26" pulls apart to the full width as the section scrolls in
-      const heading = root.current!.querySelector<HTMLElement>('[data-heading]')!
-      gsap.fromTo(
-        heading,
-        { width: () => heading.scrollWidth },
-        {
-          width: '100%',
-          ease: 'none',
-          scrollTrigger: { trigger: root.current, start: 'top 90%', end: 'top 20%', scrub: true, invalidateOnRefresh: true },
-        },
-      )
-
       gsap.utils.toArray<HTMLElement>('[data-row]').forEach(row => {
         gsap.from(row.querySelectorAll('[data-cell]'), {
           y: 80,
@@ -38,15 +28,7 @@ export default function WorkGrid() {
 
   return (
     <section ref={root} id="work" className="pt-[8vh]">
-      <div className="px-4 md:px-5">
-        <div
-          data-heading
-          className="flex gap-[0.3em] justify-between text-[clamp(56px,8.4vw,160px)] leading-[0.9] font-medium tracking-[-0.05em] whitespace-nowrap"
-        >
-          <h2>Work</h2>
-          <span>25—26</span>
-        </div>
-      </div>
+      <WorkHeading />
 
       <div className="mt-10 border-t border-ink md:mt-14">
         {projects.map(project => (

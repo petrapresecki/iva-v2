@@ -6,8 +6,8 @@ import { parseRoute, usePath } from '@/lib/router'
 import { getProject } from '@/data/projects'
 import CustomCursor from '@/components/ui/CustomCursor'
 import Nav from '@/components/layout/Nav'
-import HeroToggle from '@/components/layout/HeroToggle'
-import { useHeroVariant } from '@/hooks/useHeroVariant'
+import VariantSwitcher from '@/components/layout/VariantSwitcher'
+import { useChoice, HERO_VARIANTS, WORK_VARIANTS } from '@/hooks/useChoice'
 import ProjectDrawer from '@/components/project/ProjectDrawer'
 import HomeGrid from '@/pages/HomeGrid'
 import HomeFull from '@/pages/HomeFull'
@@ -22,7 +22,8 @@ const fade = {
 
 export default function App() {
   const route = parseRoute(usePath())
-  const [hero, setHero] = useHeroVariant()
+  const [hero, setHero] = useChoice('hero', HERO_VARIANTS, 'grid')
+  const [work, setWork] = useChoice('work', WORK_VARIANTS, 'rows')
   const project = route.page === 'home' ? getProject(route.projectId) : undefined
 
   useEffect(() => {
@@ -54,14 +55,16 @@ export default function App() {
           </motion.main>
         ) : (
           <motion.main key={`home-${hero}`} {...fade}>
-            {hero === 'grid' ? <HomeGrid paused={!!project} /> : <HomeFull paused={!!project} />}
+            {hero === 'grid' ? <HomeGrid paused={!!project} work={work} /> : <HomeFull paused={!!project} />}
           </motion.main>
         )}
       </AnimatePresence>
 
       <AnimatePresence>{project && <ProjectDrawer key="drawer" project={project} />}</AnimatePresence>
 
-      {route.page === 'home' && !project && <HeroToggle value={hero} onChange={setHero} />}
+      {route.page === 'home' && !project && (
+        <VariantSwitcher hero={hero} onHero={setHero} work={work} onWork={setWork} />
+      )}
     </>
   )
 }
