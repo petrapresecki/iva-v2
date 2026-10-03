@@ -1,6 +1,6 @@
 // Content for v3, copied verbatim from iva-portfolio (projects, detail pages, about, contact)
 
-export type Media = { src: string; alt?: string }
+export type Media = { src: string; alt?: string; ratio?: number } // ratio = width / height, so a pair can share one height
 export type Row = Media[] // one item = full width, two = side by side
 
 export type Shape = 'star' | 'round' | 'card' | 'arch'
@@ -24,8 +24,8 @@ export interface V3Project {
   gallery: Row[]
 }
 
-const v = (src: string): Media => ({ src })
-const img = (src: string, alt: string): Media => ({ src, alt })
+const v = (src: string, ratio?: number): Media => ({ src, ratio })
+const img = (src: string, alt: string, ratio?: number): Media => ({ src, alt, ratio })
 
 export const projects: V3Project[] = [
   {
@@ -46,12 +46,12 @@ export const projects: V3Project[] = [
     ],
     tools: ['Blender', 'Adobe Illustrator', 'Adobe After Effects', 'Adobe Photoshop'],
     gallery: [
-      [v('/videos/rool/rool-mp3-tile.mp4'), v('/videos/rool/rool-carousel.mp4')],
-      [v('/videos/rool/rool-poster-klub.mp4'), v('/videos/rool/rool-distortion.mp4')],
+      [v('/videos/rool/rool-mp3-tile.mp4', 0.7944), v('/videos/rool/rool-carousel.mp4', 0.7944)],
+      [v('/videos/rool/rool-poster-klub.mp4', 0.7944), v('/videos/rool/rool-distortion.mp4', 0.7944)],
       [v('/videos/rool/rool-tba-dirtyline.mp4')],
-      [v('/videos/rool/rool-story-mp3.mp4'), v('/videos/rool/rool-parti-blur.mp4')],
+      [v('/videos/rool/rool-story-mp3.mp4', 0.563), v('/videos/rool/rool-parti-blur.mp4', 0.7944)],
       [img('/images/rool/rool-composition.jpg', 'Rool composition')],
-      [v('/videos/rool/rool-sivo-anim.mp4'), v('/videos/rool/rool-poster-anim.mp4')],
+      [v('/videos/rool/rool-sivo-anim.mp4', 0.7944), v('/videos/rool/rool-poster-anim.mp4', 0.563)],
     ],
   },
   {
@@ -73,12 +73,12 @@ export const projects: V3Project[] = [
     ],
     tools: ['Blender', 'Adobe Illustrator', 'Adobe After Effects'],
     gallery: [
-      [img('/images/apuro/apuro-bottles-hero.webp', 'Apuro bottles with apples'), v('/videos/apuro/apuro-splash.mp4')],
-      [v('/videos/apuro/apuro-colors.mp4'), v('/videos/apuro/apuro-typography.mp4')],
+      [img('/images/apuro/apuro-bottles-hero.webp', 'Apuro bottles with apples', 0.75), v('/videos/apuro/apuro-splash.mp4', 0.8)],
+      [v('/videos/apuro/apuro-colors.mp4', 1), v('/videos/apuro/apuro-typography.mp4', 1)],
       [img('/images/apuro/apuro-bottles-dark.jpg', 'Apuro bottles in dark')],
-      [img('/images/apuro/apuro-packaging-boxes.jpg', 'Apuro packaging boxes'), img('/images/apuro/apuro-packaging-grass.jpg', 'Apuro packaging on grass')],
+      [img('/images/apuro/apuro-packaging-boxes.jpg', 'Apuro packaging boxes', 1), img('/images/apuro/apuro-packaging-grass.jpg', 'Apuro packaging on grass', 1)],
       [v('/videos/apuro/apuro-packaging.mp4')],
-      [v('/videos/apuro/apuro-papple.mp4'), img('/images/apuro/apuro-bottle-moody.jpg', 'Apuro bottle moody')],
+      [v('/videos/apuro/apuro-papple.mp4', 0.8), img('/images/apuro/apuro-bottle-moody.jpg', 'Apuro bottle moody', 0.75)],
     ],
   },
   {
@@ -100,13 +100,13 @@ export const projects: V3Project[] = [
     tools: ['Blender', 'Adobe Illustrator', 'Adobe Photoshop', 'Adobe InDesign'],
     gallery: [
       [img('/images/booklet/booklet-ocean.webp', 'Booklet 3D render')],
-      [img('/images/booklet/booklet-spread-1.jpg', 'Booklet spread 1'), img('/images/booklet/booklet-spread-2.jpg', 'Booklet spread 2')],
-      [img('/images/booklet/booklet-spread-3.jpg', 'Booklet spread 3'), img('/images/booklet/booklet-spread-4.jpg', 'Booklet spread 4')],
-      [img('/images/booklet/booklet-spread-5.jpg', 'Booklet spread 5'), img('/images/booklet/booklet-spread-6.jpg', 'Booklet spread 6')],
+      [img('/images/booklet/booklet-spread-1.jpg', 'Booklet spread 1', 1.3), img('/images/booklet/booklet-spread-2.jpg', 'Booklet spread 2', 1.3)],
+      [img('/images/booklet/booklet-spread-3.jpg', 'Booklet spread 3', 1.3), img('/images/booklet/booklet-spread-4.jpg', 'Booklet spread 4', 1.3)],
+      [img('/images/booklet/booklet-spread-5.jpg', 'Booklet spread 5', 1.3), img('/images/booklet/booklet-spread-6.jpg', 'Booklet spread 6', 1.3)],
       [v('/videos/booklet/booklet-rotation.mp4')],
-      [img('/images/booklet/booklet-spread-7.jpg', 'Booklet spread 7'), img('/images/booklet/booklet-spread-8.jpg', 'Booklet spread 8')],
-      [img('/images/booklet/booklet-spread-9.jpg', 'Booklet spread 9'), img('/images/booklet/booklet-spread-10.jpg', 'Booklet spread 10')],
-      [img('/images/booklet/booklet-spread-11.jpg', 'Booklet spread 11'), img('/images/booklet/booklet-spread-12.jpg', 'Booklet spread 12')],
+      [img('/images/booklet/booklet-spread-7.jpg', 'Booklet spread 7', 1.3), img('/images/booklet/booklet-spread-8.jpg', 'Booklet spread 8', 1.3)],
+      [img('/images/booklet/booklet-spread-9.jpg', 'Booklet spread 9', 1.3), img('/images/booklet/booklet-spread-10.jpg', 'Booklet spread 10', 1.3)],
+      [img('/images/booklet/booklet-spread-11.jpg', 'Booklet spread 11', 1.3), img('/images/booklet/booklet-spread-12.jpg', 'Booklet spread 12', 1.3)],
     ],
   },
   {
@@ -127,12 +127,12 @@ export const projects: V3Project[] = [
     ],
     tools: ['Adobe Illustrator', 'Adobe After Effects', 'Adobe Photoshop'],
     gallery: [
-      [v('/videos/gabagool/gabagool-rotacija-3d.mp4'), v('/videos/gabagool/gabagool-sfera-meats.mp4')],
-      [v('/videos/gabagool/gabagool-balls-bouncing.mp4'), v('/videos/gabagool/gabagool-kuponi.mp4')],
-      [v('/videos/gabagool/gabagool-cupons-carousel.mp4'), img('/images/gabagool/gabagool-packaging.webp', 'Gabagool packaging')],
+      [v('/videos/gabagool/gabagool-rotacija-3d.mp4', 0.75), v('/videos/gabagool/gabagool-sfera-meats.mp4', 0.7929)],
+      [v('/videos/gabagool/gabagool-balls-bouncing.mp4', 0.7944), v('/videos/gabagool/gabagool-kuponi.mp4', 0.7944)],
+      [v('/videos/gabagool/gabagool-cupons-carousel.mp4', 0.7944), img('/images/gabagool/gabagool-packaging.webp', 'Gabagool packaging', 0.7934)],
       [img('/images/gabagool/gabagool-showcase.webp', 'Gabagool showcase')],
-      [v('/videos/gabagool/gabagool-blobs-motion.mp4'), img('/images/gabagool/gabagool-bag.webp', 'Gabagool bag')],
-      [v('/videos/gabagool/gabagool-type-tiles.mp4'), v('/videos/gabagool/gabagool-colors.mp4')],
+      [v('/videos/gabagool/gabagool-blobs-motion.mp4', 0.7944), img('/images/gabagool/gabagool-bag.webp', 'Gabagool bag', 0.7934)],
+      [v('/videos/gabagool/gabagool-type-tiles.mp4', 1), v('/videos/gabagool/gabagool-colors.mp4', 1)],
     ],
   },
 ]

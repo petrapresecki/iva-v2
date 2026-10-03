@@ -20,7 +20,7 @@ export default function Keyring3D(props: KeyringProps) {
     <Canvas
       shadows
       className="v3-keyring__canvas"
-      camera={{ position: [0, 0, 14], fov: 30 }}
+      camera={{ position: [0, 0, CAMERA_Z], fov: 30 }}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true }}
     >
@@ -77,10 +77,14 @@ const ANGLES = [-82, -28, 28, 82].map(d => (d * Math.PI) / 180) // around the bo
 // Chain lengths: on desktop the charms fan out side by side; on phones they hang at staggered heights
 const LINKS = [3, 7, 4, 8]
 const LINKS_MOBILE = [3, 14, 7, 19]
-// Front-to-back order. On phones the charms cascade, so the higher one hangs in front and no name sticker is hidden
-const DEPTH = [0.2, -0.06, 0.12, 0.02]
-const DEPTH_MOBILE = [0.45, 0.15, 0.3, 0]
+// Front-to-back order, in charm sizes. On phones the charms cascade, so the higher one hangs in front and no
+// name sticker is hidden. The layers are half a charm apart, so turned charms can't cut into each other
+// (each is scaled back to its on-screen size, see below)
+const DEPTH = [1, -0.35, 0.55, 0.1]
+const DEPTH_MOBILE = [1.35, 0.45, 0.9, 0]
 const FACING = [0.28, -0.18, 0.12, -0.32] // and turn a little, so you read them as objects
+const MAX_TWIST = 0.45 // radians either side, which keeps a turned charm inside its depth layer
+const CAMERA_Z = 14
 const G = 0.9
 const DAMP = 0.965
 const DAMP_HOVER = 0.88
@@ -352,6 +356,10 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
       c.spin += (FACING[i] - c.twist) * 0.012 - c.spin * calm + (reduced ? 0 : vx * 0.0045)
       if (c.free) c.spin += 0.004
       c.twist += c.spin
+      if (!c.free && Math.abs(c.twist) > MAX_TWIST) {
+        c.twist = Math.sign(c.twist) * MAX_TWIST
+        c.spin *= -0.3
+      }
       if (c.free && end.y > H + S * 3) c.parked = true
     }
 
@@ -479,6 +487,7 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
   const links = useRef<THREE.InstancedMesh>(null)
   const ring = useRef<THREE.Mesh>(null)
   const groups = useRef<(THREE.Group | null)[]>([])
+  const lifts = useRef(projects.map(() => 1)) // the grab lift, kept apart from the depth scale
 
   const charmParts = useMemo(() => {
     const s = S * k
@@ -555,10 +564,14 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
       const end = c.chain[c.chain.length - 1]
       const prev = c.chain[c.chain.length - 2]
       const tilt = Math.atan2(end.x - prev.x, end.y - prev.y) * 0.6 // tilt with the chain, but stay heavy-bottomed
-      g.position.set(wx(end.x), wy(end.y), (mobile ? DEPTH_MOBILE : DEPTH)[i] * charmParts[i].s)
+      // moved along the line of sight to its depth layer and scaled to match, so it looks exactly
+      // where and how big it would at z = 0, and still meets the end of its chain
+      const z = (mobile ? DEPTH_MOBILE : DEPTH)[i] * charmParts[i].s
+      const persp = (CAMERA_Z - z) / CAMERA_Z
+      g.position.set(wx(end.x) * persp, wy(end.y) * persp, z)
       g.rotation.set(0, c.twist, tilt)
-      const lift = rope.dragging === c ? 1.06 : 1
-      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, lift, 0.2))
+      lifts.current[i] = THREE.MathUtils.lerp(lifts.current[i], rope.dragging === c ? 1.06 : 1, 0.2)
+      g.scale.setScalar(lifts.current[i] * persp)
     })
   })
 

@@ -6,7 +6,7 @@ import Approach from '@/components/full/Approach'
 import Exhibitions from '@/components/full/Exhibitions'
 import TickerFooter from '@/components/full/TickerFooter'
 
-// Full-screen version: k95-style 3D hero, then donut-studio composition below
+// Full-screen version: full-screen dotted reveal hero, then donut-studio composition below
 export default function HomeFull({ paused }: { paused: boolean }) {
   return (
     <>

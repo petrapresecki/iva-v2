@@ -63,7 +63,7 @@ const DISPLAY = `#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
 uniform sampler2D uDye; uniform sampler2D uFrom; uniform sampler2D uTo;
-uniform vec2 uRes; uniform float uMix; uniform float uFromAspect; uniform float uToAspect;
+uniform vec2 uRes; uniform float uMix; uniform float uDot; uniform float uFromAspect; uniform float uToAspect;
 uniform vec3 uInk; uniform vec3 uPaper; uniform vec3 uAccent;
 
 float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
@@ -78,21 +78,24 @@ vec2 cover(vec2 uv, float imageAspect) {
 }
 
 void main() {
-  vec2 cell = floor(gl_FragCoord.xy / 2.0);
-  vec2 uv = (cell * 2.0 + 1.0) / uRes;
+  vec2 cell = floor(gl_FragCoord.xy / uDot);
+  vec2 uv = (cell * uDot + 0.5 * uDot) / uRes;
   float threshold = bayer8(cell);
 
-  // Dot-by-dot dissolve between projects
-  vec3 image = threshold < uMix
-    ? texture(uTo, cover(uv, uToAspect)).rgb
-    : texture(uFrom, cover(uv, uFromAspect)).rgb;
-  float lum = clamp(pow(dot(image, vec3(0.299, 0.587, 0.114)), 0.75) * 1.08, 0.0, 1.0);
+  // Dot-by-dot dissolve between projects; the dots sample one colour per cell,
+  // the revealed image samples every pixel so it shows at full resolution
+  bool showTo = threshold < uMix;
+  vec2 px = gl_FragCoord.xy / uRes;
+  vec3 image = showTo ? texture(uTo, cover(uv, uToAspect)).rgb : texture(uFrom, cover(uv, uFromAspect)).rgb;
+  vec3 sharp = showTo ? texture(uTo, cover(px, uToAspect)).rgb : texture(uFrom, cover(px, uFromAspect)).rgb;
+  // Extra contrast so pale backgrounds print as clean white rather than grey noise
+  float lum = smoothstep(0.12, 0.82, pow(dot(image, vec3(0.299, 0.587, 0.114)), 0.75));
   vec3 color = lum > threshold ? uPaper : uInk;
 
   // The pointer trail reveals the real image, edged in green
   float dye = texture(uDye, uv).r;
-  if (threshold < dye * 1.8) color = image;
-  else if (threshold < dye * 3.0) color = uAccent;
+  if (threshold < dye * 2.8) color = sharp;
+  else if (threshold < dye * 3.5) color = uAccent;
   o = vec4(color, 1.0);
 }`
 
@@ -103,21 +106,36 @@ const rgb = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16
 
 interface WorkRevealProps {
   slides: string[]
+  // Size of one dither dot, and radius of the pointer brush, in CSS pixels
+  dot?: number
+  brush?: number
   // Seconds each slide holds, including its dissolve
   interval?: number
+  // Freeze while hidden behind something (e.g. the project drawer)
+  paused?: boolean
   onSlide?: (index: number) => void
   className?: string
 }
 
 const DISSOLVE = 1.2
 
-export default function WorkReveal({ slides, interval = 4.5, onSlide, className = '' }: WorkRevealProps) {
+export default function WorkReveal({
+  slides,
+  dot = 2,
+  brush = 48,
+  interval = 4.5,
+  paused = false,
+  onSlide,
+  className = '',
+}: WorkRevealProps) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const onSlideRef = useRef(onSlide)
+  const pausedRef = useRef(paused)
 
   useEffect(() => {
     onSlideRef.current = onSlide
-  }, [onSlide])
+    pausedRef.current = paused
+  }, [onSlide, paused])
 
   useEffect(() => {
     const el = canvas.current!
@@ -195,9 +213,12 @@ export default function WorkReveal({ slides, interval = 4.5, onSlide, className 
     let dye: ReturnType<typeof doubleTarget>
     let curlTarget: Target
 
+    let dpr = 1
     const resize = () => {
-      el.width = el.clientWidth
-      el.height = el.clientHeight
+      // Render at device resolution so the revealed image is crisp on retina screens
+      dpr = Math.min(window.devicePixelRatio || 1, 2)
+      el.width = Math.round(el.clientWidth * dpr)
+      el.height = Math.round(el.clientHeight * dpr)
       const aspect = el.width / Math.max(1, el.height)
       const simH = 128
       const dyeH = 384
@@ -228,10 +249,12 @@ export default function WorkReveal({ slides, interval = 4.5, onSlide, className 
       img.onload = () => {
         const tex = gl.createTexture()!
         gl.bindTexture(gl.TEXTURE_2D, tex)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+        // Mipmaps keep the revealed image sharp when it's drawn smaller than its source
+        gl.generateMipmap(gl.TEXTURE_2D)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
         images[i] = { tex, aspect: img.width / img.height }
       }
       img.src = src
@@ -265,7 +288,7 @@ export default function WorkReveal({ slides, interval = 4.5, onSlide, className 
       raf = requestAnimationFrame(frame)
       const dt = Math.min((now - prev) / 1000, 1 / 30)
       prev = now
-      if (!visible) return
+      if (!visible || pausedRef.current) return
       time += dt
 
       if (canSimulate) {
@@ -276,7 +299,7 @@ export default function WorkReveal({ slides, interval = 4.5, onSlide, className 
           gl.useProgram(splat.program)
           gl.uniform1f(splat.uniforms.uAspect, aspect)
           gl.uniform2f(splat.uniforms.uPoint, s.x, s.y)
-          gl.uniform1f(splat.uniforms.uRadius, (48 / el.height) ** 2)
+          gl.uniform1f(splat.uniforms.uRadius, ((brush * dpr) / el.height) ** 2)
           gl.uniform1i(splat.uniforms.uTarget, bindTexture(0, velocity.read.tex))
           gl.uniform3f(splat.uniforms.uValue, s.dx * 2200 * aspect, s.dy * 2200, 0)
           draw(velocity.write)
@@ -333,6 +356,7 @@ export default function WorkReveal({ slides, interval = 4.5, onSlide, className 
       gl.useProgram(display.program)
       gl.uniform2f(display.uniforms.uRes, el.width, el.height)
       gl.uniform1f(display.uniforms.uMix, mix)
+      gl.uniform1f(display.uniforms.uDot, dot * dpr)
       gl.uniform1f(display.uniforms.uFromAspect, images[from].aspect)
       gl.uniform1f(display.uniforms.uToAspect, images[to].aspect)
       gl.uniform1i(display.uniforms.uFrom, bindTexture(1, images[from].tex))
@@ -351,7 +375,7 @@ export default function WorkReveal({ slides, interval = 4.5, onSlide, className 
       resizeObserver.disconnect()
       intersection.disconnect()
     }
-  }, [slides, interval])
+  }, [slides, interval, dot, brush])
 
   return <canvas ref={canvas} aria-hidden className={`block [image-rendering:pixelated] ${className}`} />
 }

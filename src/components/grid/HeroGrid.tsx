@@ -9,14 +9,7 @@ import { navigate } from '@/lib/router'
 import { projects } from '@/data/projects'
 import { site } from '@/data/site'
 
-// One strong image per project for the dithered reveal cell
-const revealImages: Record<string, string> = {
-  rool: '/images/rool/rool-composition.jpg',
-  apuro: '/images/apuro/apuro-bottles-dark.jpg',
-  booklet: '/images/booklet/booklet-spread-6.jpg',
-  gabagool: '/images/gabagool/gabagool-showcase.webp',
-}
-const slides = projects.map(p => revealImages[p.id])
+const slides = projects.map(p => p.reveal)
 
 /**
  * Aspen-style hero: edge-to-edge cells split by 1px lines. The reveal cell

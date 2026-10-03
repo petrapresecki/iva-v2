@@ -22,6 +22,8 @@ export interface Project {
   snippets: Media[]
   // Stills used as textures in the 3D showcase
   cards: string[]
+  // One strong image for the dotted reveal effect
+  reveal: string
   gallery: GalleryRow[]
 }
 
@@ -50,6 +52,7 @@ export const projects: Project[] = [
       video('/videos/rool/rool-mp3-tile.mp4', '858 / 1080'),
     ],
     cards: cards('rool', 8),
+    reveal: '/images/rool/rool-composition.jpg',
     gallery: [
       [video('/videos/rool/rool-mp3-tile.mp4', '3 / 4'), video('/videos/rool/rool-carousel.mp4', '3 / 4')],
       [video('/videos/rool/rool-poster-klub.mp4', '3 / 4'), video('/videos/rool/rool-distortion.mp4', '3 / 4')],
@@ -78,6 +81,7 @@ export const projects: Project[] = [
       video('/videos/apuro/apuro-typography.mp4', '1 / 1'),
     ],
     cards: cards('apuro', 8),
+    reveal: '/images/apuro/apuro-bottles-dark.jpg',
     gallery: [
       [
         image('/images/apuro/apuro-bottles-hero.webp', '3 / 4', 'Apuro bottles with apples'),
@@ -114,6 +118,7 @@ export const projects: Project[] = [
       image('/images/booklet/booklet-ocean.webp', '16 / 9', 'Booklet by the ocean'),
     ],
     cards: cards('booklet', 7),
+    reveal: '/images/booklet/booklet-spread-6.jpg',
     gallery: [
       [image('/images/booklet/booklet-ocean.webp', '16 / 9', 'Booklet by the ocean')],
       ...[
@@ -151,6 +156,7 @@ export const projects: Project[] = [
       video('/videos/gabagool/gabagool-blobs-motion.mp4', '858 / 1080'),
     ],
     cards: cards('gabagool', 7),
+    reveal: '/images/gabagool/gabagool-showcase.webp',
     gallery: [
       [
         video('/videos/gabagool/gabagool-rotacija-3d.mp4', '3 / 4'),

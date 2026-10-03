@@ -2,9 +2,10 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 're
 import { gsap, prefersReducedMotion } from '@/lib/gsap'
 import { navigate, usePath } from '@/lib/router'
 import PixelCursor from '@/components/kit/pixel-cursor/PixelCursor'
-import { ABOUT_BG, HOME_BG, about, getProject, projects, type V3Project } from './content'
+import { ABOUT_BG, HOME_BG, about, getProject, projects, type Shape, type V3Project } from './content'
 import { AboutPage, ProjectPage } from './pages'
 import { Marquee, Print } from './ui'
+import { coverSize, shapeClip } from './shapes'
 import './v3.css'
 
 const Keyring3D = lazy(() => import('./Keyring3D'))
@@ -57,7 +58,7 @@ export default function V3App() {
     }
   }, [])
 
-  const overlay = route.page === 'about' ? { key: 'about', color: ABOUT_BG } : project ? { key: project.id, color: project.bg } : null
+  const overlay: Target = route.page === 'about' ? { key: 'about', color: ABOUT_BG, shape: 'round' } : project ? { key: project.id, color: project.bg, shape: project.shape } : null
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && navigate('/v3')
@@ -156,11 +157,12 @@ export default function V3App() {
   )
 }
 
-type Target = { key: string; color: string } | null
+type Target = { key: string; color: string; shape: Shape } | null
 
 /**
- * A circle of flat colour that floods out from where you clicked (or where the charm
- * snapped off) and holds the project or about page; closing shrinks it back.
+ * Flat colour that floods out from where you clicked (or where the charm snapped off), cut
+ * in the shape of that project's charm, and holds the project or about page; closing
+ * shrinks it back.
  */
 function Flood({ target, takeOrigin, children }: { target: Target; takeOrigin: () => Origin; children: (key: string) => React.ReactNode }) {
   const el = useRef<HTMLDivElement>(null)
@@ -185,13 +187,24 @@ function Flood({ target, takeOrigin, children }: { target: Target; takeOrigin: (
     const o = takeOrigin()
     from.current = o
     if (scroller.current) scroller.current.scrollTop = 0
-    const r = Math.hypot(Math.max(o.x, window.innerWidth - o.x), Math.max(o.y, window.innerHeight - o.y))
     if (prefersReducedMotion()) {
       gsap.set(node, { clipPath: 'none' })
       gsap.delayedCall(0, () => setUnder(null))
       return
     }
-    const tween = gsap.fromTo(node, { clipPath: `circle(0px at ${o.x}px ${o.y}px)` }, { clipPath: `circle(${r}px at ${o.x}px ${o.y}px)`, duration: 0.85, ease: 'expo.out', onComplete: () => setUnder(null) })
+    const { shape } = target
+    const grow = { size: 0 }
+    node.style.clipPath = shapeClip(shape, o.x, o.y, 0)
+    const tween = gsap.to(grow, {
+      size: coverSize(shape, o.x, o.y),
+      duration: 0.95,
+      ease: 'expo.out',
+      onUpdate: () => void (node.style.clipPath = shapeClip(shape, o.x, o.y, grow.size)),
+      onComplete: () => {
+        node.style.clipPath = 'none' // a full-screen polygon would still cost every scroll frame
+        setUnder(null)
+      },
+    })
     return () => void tween.kill()
   }, [target?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -203,7 +216,15 @@ function Flood({ target, takeOrigin, children }: { target: Target; takeOrigin: (
       gsap.delayedCall(0, () => setClosing(null))
       return
     }
-    const tween = gsap.to(node, { clipPath: `circle(0px at ${o.x}px ${o.y}px)`, duration: 0.6, ease: 'expo.inOut', onComplete: () => setClosing(null) })
+    const { shape } = closing
+    const shrink = { size: coverSize(shape, o.x, o.y) }
+    const tween = gsap.to(shrink, {
+      size: 0,
+      duration: 0.65,
+      ease: 'expo.inOut',
+      onUpdate: () => void (node.style.clipPath = shapeClip(shape, o.x, o.y, shrink.size)),
+      onComplete: () => setClosing(null),
+    })
     return () => void tween.kill()
   }, [closing])
 
