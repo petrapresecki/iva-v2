@@ -148,7 +148,6 @@ export const about = {
   email: 'presecki.iva@gmail.com',
 }
 
-export const showreel = '/videos/hero.mp4'
 export const ABOUT_BG = '#efece4'
 export const HOME_BG = '#05ff43'
 

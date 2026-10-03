@@ -31,19 +31,17 @@ Fonts (license, then stand-in):
 
 | Role | Dinamo face | Stand-in | Notes |
 |---|---|---|---|
-| Display | ABC Gravity | Anybody | 900, width axis 50–150, animated |
-| Round | ABC Maxi Round | Unbounded | 800–900; "Hi! :)", outlined marquee, charm labels |
-| Mono | ABC Camera Mono | DM Mono | 400/500; all labels |
+| Round | ABC Maxi Round | Unbounded | 800–900; outlined marquee, charm labels (home only) |
+| Mono | ABC Camera Mono | DM Mono | 400/500; labels, page titles, all page text |
 
 Type scale:
 
 | Step | Size | Leading | Tracking | Face |
 |---|---|---|---|---|
-| display | `clamp(84px, 21vw, 360px)` | 0.78 | -0.03em | Anybody 900 |
-| headline | `clamp(72px, 14vw, 220px)` | 0.9 | -0.04em | Unbounded 800 |
-| title | `clamp(22px, 3vw, 44px)` | 1 | 0 | Anybody 800, 120% |
-| lead | `clamp(18px, 1.7vw, 26px)` | 1.22 | -0.01em | Anybody 500, 88% |
-| body | 11px mono caps | 1.35 | 0.05em | DM Mono |
+| display | `22vw` outlined | 1 | -0.04em | Unbounded 900 (home marquee) |
+| headline | `clamp(64px, 13vw, 220px)` | 0.92 | -0.06em | DM Mono 500 caps (page titles, "Hi! :)") |
+| lead | `clamp(14px, 1.15vw, 17px)` | 1.55 | -0.01em | DM Mono 400 (descriptions, bio) |
+| body | 11px caps | 1.35 | 0.05em | DM Mono (labels, pills) |
 
 Grid and shape:
 - **Home:** no grid. The ring hangs from the centre of the top edge.
@@ -61,24 +59,25 @@ Tokens: [theme.json](theme.json) (kit format, id `acrylic`).
    - Behind it, a giant outlined Unbounded marquee reads PROJECTS. Bottom-left hint pill. Bottom-right info pills.
    - Motion: the rope sways with pointer speed and charms twist on their chains. Hovering a charm calms the whole ring, floods the page in that project's colour, swaps the marquee to its name and prints `NN / 04 · category · year`.
    - Touch: tap pulls the charm for you, and drag works with a finger.
-2. **Showreel**: her showcase animation (`hero.mp4`) full-bleed in a white taped frame. It scrolls up over the stage.
-3. **Contact**: "Contact" + presecki.iva@gmail.com between two thick rules.
+2. **Contact**: bottom-right pill on the same screen, "Contact" + presecki.iva@gmail.com, printing in on load. Home is one screen and doesn't scroll.
+   - Petra's call: the showreel (`hero.mp4`) from the iva-portfolio home is dropped, because it diluted the keyring.
 
 **Project `/v3/work/:id`** (a flood overlay over home, with its own scroll and shareable URL)
-- Top labels, then the title at display size, stretching from 50% to 112% width as its letters slap up.
-- Hero video in a taped white frame.
-- Description and tool pills.
-- The full gallery in the original row order (pairs and full-width rows), each frame slightly rotated.
+- Inside pages speak the navbar's language: DM Mono caps, square boxes, 1.5px ink rules. They stay calmer than the punk home (Petra's call).
+- Top labels as nav pills, then the title in big DM Mono, rising out of its line.
+- Hero video in a thin ink frame.
+- The description on a white bordered card, with tool pills.
+- The full gallery in the original row order (pairs and full-width rows), straight, with thin ink frames.
 - previous / next project. "← PORTFOLIO" (or Escape) closes it, and the charm drops back onto the ring.
 
-**About `/v3/about`** (pink flood overlay)
+**About `/v3/about`** (off-white flood overlay, same navbar language)
 - "Hi! :)", the E-MAIL pill, both bio paragraphs, EXIBITIONS right-aligned.
 
 ## 4. Motion language
 
 - **Easings:** expo.out for floods and stretches. back.out for slaps. Elastic for snap shakes.
 - **Hover:** the ring's damping goes from 0.965 to 0.88, the background crossfades over 0.5s, and the label prints at 18ms per character.
-- **Scroll:** home scrolls normally (Lenis), and the showreel slides over the pinned stage. Overlays scroll on their own.
+- **Scroll:** home is one screen. Overlays scroll on their own.
 - **Page transition:** a circular colour flood from the charm's screen position (0.85s expo.out). Closing reverses it (0.6s expo.inOut).
 - **Reduced motion:**
   - The rope is static (settled once, no wind or twist).
@@ -124,7 +123,7 @@ Left out, by Petra's call: the scan line (too minimal), the sticker bomb and the
 - All copy, images and video already exist (from iva-portfolio, in `public/`).
 - Copy kept verbatim, including "EXIBITIONS" and "Faculty of Graphic Arts exibitions". Ask Iva whether to fix the spelling.
 - Nice to have: transparent PNG cut-outs of the 3D objects (bottle, keychain, book, bag) as charm faces.
-- Licences: ABC Gravity, ABC Maxi Round and ABC Camera Mono, before launch.
+- Licences: ABC Maxi Round and ABC Camera Mono, before launch.
 
 ## 9. Build plan
 

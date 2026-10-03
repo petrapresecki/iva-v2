@@ -1,16 +1,15 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gsap, prefersReducedMotion } from '@/lib/gsap'
-import { initLenis, destroyLenis, getLenis } from '@/lib/lenis'
 import { back, navigate, usePath } from '@/lib/router'
 import PixelCursor from '@/components/kit/pixel-cursor/PixelCursor'
-import { ABOUT_BG, HOME_BG, about, getProject, projects, showreel, type V3Project } from './content'
+import { ABOUT_BG, HOME_BG, about, getProject, projects, type V3Project } from './content'
 import { AboutPage, ProjectPage } from './pages'
 import { Marquee, Print } from './ui'
 import './v3.css'
 
 const Keyring3D = lazy(() => import('./Keyring3D'))
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,100..900&family=Unbounded:wght@400..900&family=DM+Mono:wght@400;500&display=swap'
+const FONTS = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=DM+Mono:wght@400;500&display=swap'
 
 type Route = { page: 'home' } | { page: 'work'; id: string } | { page: 'about' }
 
@@ -41,29 +40,24 @@ export default function V3App() {
   const [hovered, setHovered] = useState<V3Project | null>(null)
   const origin = useRef<Origin | null>(null)
 
-  // Fonts, page colour and smooth scroll belong to this version only
+  // Fonts and page colour belong to this version only
   useEffect(() => {
     const link = document.createElement('link')
     link.rel = 'stylesheet'
     link.href = FONTS
     document.head.append(link)
     const bg = document.body.style.background
+    const overscroll = document.documentElement.style.overscrollBehavior
     document.body.style.background = HOME_BG
-    initLenis()
+    document.documentElement.style.overscrollBehavior = 'none' // pulling a charm down mustn't reload the page
     return () => {
       link.remove()
       document.body.style.background = bg
-      destroyLenis()
+      document.documentElement.style.overscrollBehavior = overscroll
     }
   }, [])
 
   const overlay = route.page === 'about' ? { key: 'about', color: ABOUT_BG } : project ? { key: project.id, color: project.bg } : null
-
-  useEffect(() => {
-    const lenis = getLenis()
-    if (overlay) lenis?.stop()
-    else lenis?.start()
-  }, [overlay?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && back('/v3')
@@ -89,12 +83,12 @@ export default function V3App() {
       <PixelCursor interactive="a, button, [role='button'], [data-charm]" />
 
       <header className="v3-header v3-label">
-        <button className="v3-pill v3-pill--ink" onClick={e => (route.page === 'home' ? getLenis()?.scrollTo(0) : go('/v3', e))}>
+        <button className="v3-pill v3-pill--ink" onClick={() => route.page !== 'home' && close()}>
           IVA PRESEČKI
         </button>
         <nav className="v3-nav">
-          <button className="v3-pill" aria-current={route.page !== 'about' ? 'page' : undefined} onClick={() => (route.page === 'home' ? getLenis()?.scrollTo(0) : close())}>
-            PORTFOLIO
+          <button className="v3-pill" aria-current={route.page !== 'about' ? 'page' : undefined} onClick={() => route.page !== 'home' && close()}>
+            {route.page === 'home' ? 'PORTFOLIO' : '← PORTFOLIO'}
           </button>
           <button className="v3-pill" aria-current={route.page === 'about' ? 'page' : undefined} onClick={e => go('/v3/about', e)}>
             ABOUT
@@ -103,7 +97,7 @@ export default function V3App() {
       </header>
 
       <main>
-        <section className="v3-stage" style={{ backgroundColor: hovered?.bg ?? HOME_BG }}>
+        <section className={`v3-stage ${hovered ? 'is-hovering' : ''}`} style={{ backgroundColor: hovered?.bg ?? HOME_BG }}>
           <Marquee text={`${hovered ? hovered.title : 'PROJECTS'} ✺ `} className="v3-stage__marquee" />
           {HAS_WEBGL ? (
             <Suspense fallback={null}>
@@ -128,25 +122,22 @@ export default function V3App() {
               ))}
             </ul>
           )}
-          <p className="v3-stage__hint v3-label v3-pill">GRAB A CHARM · PULL IT OFF THE RING</p>
-          {hovered && (
-            <div className="v3-stage__info v3-label" key={hovered.id}>
-              <span>{hovered.n} / 04</span>
-              <Print text={hovered.category} delay={60} />
-              <Print text={String(hovered.year)} delay={200} />
-            </div>
-          )}
-        </section>
-
-        <section className="v3-reel">
-          <div className="v3-frame v3-reel__frame">
-            <span className="v3-tape v3-tape--tl" />
-            <video src={showreel} autoPlay muted loop playsInline />
-            <span className="v3-tape v3-tape--br" />
-          </div>
-          <div className="v3-contact">
-            <span>Contact</span>
-            <a href={`mailto:${about.email}`}>{about.email}</a>
+          <p className="v3-stage__hint v3-label v3-pill">
+            <span className="v3-only-hover">GRAB A CHARM · PULL IT OFF THE RING</span>
+            <span className="v3-only-touch">TAP OR PULL A CHARM</span>
+          </p>
+          <div className="v3-stage__corner v3-label">
+            {hovered && (
+              <div className="v3-stage__info" key={hovered.id}>
+                <span>{hovered.n} / 04</span>
+                <Print text={hovered.category} delay={60} />
+                <Print text={String(hovered.year)} delay={200} />
+              </div>
+            )}
+            <a className="v3-stage__contact" href={`mailto:${about.email}`}>
+              <span>Contact</span>
+              <Print text={about.email} delay={1400} charDelay={30} />
+            </a>
           </div>
         </section>
       </main>
@@ -154,9 +145,9 @@ export default function V3App() {
       <Flood target={overlay} takeOrigin={takeOrigin}>
         {key =>
           key === 'about' ? (
-            <AboutPage onClose={close} />
+            <AboutPage />
           ) : (
-            <ProjectPage key={key} project={getProject(key)!} onClose={close} onGo={(path, e) => go(path, e)} />
+            <ProjectPage key={key} project={getProject(key)!} onGo={(path, e) => go(path, e)} />
           )
         }
       </Flood>
@@ -220,7 +211,7 @@ function Flood({ target, takeOrigin, children }: { target: Target; takeOrigin: (
     <>
       {under && <div className="v3-flood v3-flood--under" style={{ background: under }} />}
       <div ref={el} className="v3-flood" style={{ background: shown.color }}>
-        <div ref={scroller} className="v3-flood__scroll" data-lenis-prevent>
+        <div ref={scroller} className="v3-flood__scroll">
           {children(shown.key)}
         </div>
       </div>

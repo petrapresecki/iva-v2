@@ -1,7 +1,7 @@
 {
   "id": "acrylic",
   "name": "Acrylic",
-  "description": "Electric green paper, black ink and white label pills; one flat flood colour per project, chunky width-animated display type and mono tags.",
+  "description": "Electric green paper, black ink and white label pills; one flat flood colour per project, an outlined round display face on the home, mono caps in square ruled boxes everywhere else.",
   "inspiredBy": ["lib-gass-rows", "lib-gass-color", "lib-an", "lib-k95-hover"],
   "colors": { "paper": "#05ff43", "ink": "#0a0a0a", "accent": "#ffffff", "mist": "#efece4", "muted": "#075a1d" },
   "palette": [
@@ -13,16 +13,16 @@
     { "name": "Chrome", "value": "#cfcfcf" }
   ],
   "fonts": {
-    "sans": { "family": "Anybody", "fallback": "'Arial Narrow', Arial, sans-serif", "google": "Anybody:wdth,wght@50..150,100..900" },
+    "sans": { "family": "DM Mono", "fallback": "ui-monospace, Menlo, monospace", "google": "DM+Mono:wght@400;500" },
     "display": { "family": "Unbounded", "fallback": "'Arial Rounded MT Bold', Arial, sans-serif", "google": "Unbounded:wght@400..900" },
     "mono": { "family": "DM Mono", "fallback": "ui-monospace, Menlo, monospace", "google": "DM+Mono:wght@400;500" }
   },
   "type": [
-    { "name": "display", "size": "clamp(84px, 21vw, 360px)", "leading": "0.78", "tracking": "-0.03em", "weight": 900 },
-    { "name": "headline", "size": "clamp(72px, 14vw, 220px)", "leading": "0.9", "tracking": "-0.04em", "weight": 800 },
-    { "name": "title", "size": "clamp(22px, 3vw, 44px)", "leading": "1", "tracking": "0", "weight": 800 },
-    { "name": "lead", "size": "clamp(18px, 1.7vw, 26px)", "leading": "1.22", "tracking": "-0.01em", "weight": 500 },
-    { "name": "body", "size": "14px", "leading": "1.45", "tracking": "0", "weight": 400 }
+    { "name": "display", "size": "22vw", "leading": "1", "tracking": "-0.04em", "weight": 900 },
+    { "name": "headline", "size": "clamp(64px, 13vw, 220px)", "leading": "0.92", "tracking": "-0.06em", "weight": 500 },
+    { "name": "title", "size": "clamp(22px, 3vw, 44px)", "leading": "1", "tracking": "-0.04em", "weight": 500 },
+    { "name": "lead", "size": "clamp(14px, 1.15vw, 17px)", "leading": "1.55", "tracking": "-0.01em", "weight": 400 },
+    { "name": "body", "size": "11px", "leading": "1.35", "tracking": "0.05em", "weight": 400 }
   ],
   "radius": "0px",
   "ease": { "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)", "in-out-expo": "cubic-bezier(0.87, 0, 0.13, 1)" }

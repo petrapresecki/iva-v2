@@ -5,9 +5,7 @@ import { Media } from './ui'
 
 type Go = (path: string, e: React.MouseEvent) => void
 
-const tilt = (i: number) => (i % 2 ? -1.2 : 1.4)
-
-export function ProjectPage({ project, onClose, onGo }: { project: V3Project; onClose: () => void; onGo: Go }) {
+export function ProjectPage({ project, onGo }: { project: V3Project; onGo: Go }) {
   const root = useRef<HTMLDivElement>(null)
   const i = projects.indexOf(project)
   const prev = projects[i - 1]
@@ -16,37 +14,29 @@ export function ProjectPage({ project, onClose, onGo }: { project: V3Project; on
   useGSAP(
     () => {
       if (prefersReducedMotion()) return
-      // letters slap up while the title stretches from condensed to wide
-      const title = root.current!.querySelector<HTMLElement>('.v3-project__title')!
-      const width = { w: 50 }
-      gsap.fromTo('.v3-project__title .v3-ch', { yPercent: 110, rotate: () => gsap.utils.random(-14, 14) }, { yPercent: 0, rotate: 0, duration: 0.9, ease: 'back.out(1.6)', stagger: 0.04, delay: 0.15 })
-      gsap.to(width, { w: 112, duration: 1.2, ease: 'expo.out', delay: 0.2, onUpdate: () => void (title.style.fontStretch = `${width.w}%`) })
-      gsap.from('.v3-project__labels span, .v3-project__hero, .v3-project__body > *', { y: 60, opacity: 0, rotate: () => gsap.utils.random(-5, 5), duration: 0.8, ease: 'expo.out', stagger: 0.06, delay: 0.3 })
+      // the title rises out of its line, then the page settles in under it
+      gsap.from('.v3-project__title .v3-ch', { yPercent: 105, duration: 0.9, ease: 'expo.out', stagger: 0.03, delay: 0.2 })
+      gsap.from('.v3-project__labels span, .v3-project__hero, .v3-project__body > *', { y: 30, opacity: 0, duration: 0.8, ease: 'expo.out', stagger: 0.06, delay: 0.35 })
     },
     { scope: root, dependencies: [project.id] },
   )
 
   return (
     <div ref={root} className="v3-project" style={{ color: project.ink }}>
-      <button className="v3-btn v3-label v3-close" onClick={onClose}>
-        ← PORTFOLIO
-      </button>
       <div className="v3-project__labels v3-label">
         <span>{project.n} / 04</span>
         <span>{project.category}</span>
         <span>{project.year}</span>
       </div>
-      <h1 className="v3-project__title" style={{ color: project.titleInk, fontSize: `min(clamp(84px, 21vw, 360px), ${(112 / project.title.length).toFixed(2)}vw)` }} aria-label={project.title}>
+      <h1 className="v3-project__title" style={{ color: project.titleInk, fontSize: `min(clamp(64px, 13vw, 220px), ${(170 / project.title.length).toFixed(2)}vw)` }} aria-label={project.title}>
         {[...project.title].map((c, k) => (
           <span key={k} className="v3-ch" aria-hidden>
             {c}
           </span>
         ))}
       </h1>
-      <div className="v3-project__hero v3-frame">
-        <span className="v3-tape v3-tape--tl" />
+      <div className="v3-project__hero">
         <video src={project.hero} autoPlay muted loop playsInline />
-        <span className="v3-tape v3-tape--br" />
       </div>
       <div className="v3-project__body">
         <div className="v3-project__desc">
@@ -54,10 +44,8 @@ export function ProjectPage({ project, onClose, onGo }: { project: V3Project; on
             <p key={t.slice(0, 24)}>{t}</p>
           ))}
           <div className="v3-tools v3-label">
-            {project.tools.map((t, k) => (
-              <span key={t} style={{ rotate: `${[-2, 1.5, -1, 2.5][k % 4]}deg` }}>
-                {t}
-              </span>
+            {project.tools.map(t => (
+              <span key={t}>{t}</span>
             ))}
           </div>
         </div>
@@ -65,10 +53,8 @@ export function ProjectPage({ project, onClose, onGo }: { project: V3Project; on
       <div className="v3-gallery">
         {project.gallery.map((row, r) => (
           <div key={r} className={`v3-gallery__row ${row.length > 1 ? 'is-pair' : ''}`}>
-            {row.map((item, k) => (
-              <div key={item.src} className="v3-frame" style={{ rotate: `${tilt(r + k)}deg` }}>
-                <Media item={item} />
-              </div>
+            {row.map(item => (
+              <Media key={item.src} item={item} />
             ))}
           </div>
         ))}
@@ -91,23 +77,20 @@ export function ProjectPage({ project, onClose, onGo }: { project: V3Project; on
   )
 }
 
-export function AboutPage({ onClose }: { onClose: () => void }) {
+export function AboutPage() {
   const root = useRef<HTMLDivElement>(null)
 
   useGSAP(
     () => {
       if (prefersReducedMotion()) return
-      gsap.from('.v3-about__hi', { yPercent: 60, rotate: -8, opacity: 0, duration: 0.9, ease: 'back.out(1.8)', delay: 0.15 })
-      gsap.from('.v3-about__mail, .v3-about__bio p, .v3-about__ex', { y: 50, opacity: 0, duration: 0.8, ease: 'expo.out', stagger: 0.08, delay: 0.3 })
+      gsap.from('.v3-about__hi', { yPercent: 40, opacity: 0, duration: 0.9, ease: 'expo.out', delay: 0.2 })
+      gsap.from('.v3-about__mail, .v3-about__bio p, .v3-about__ex', { y: 30, opacity: 0, duration: 0.8, ease: 'expo.out', stagger: 0.08, delay: 0.35 })
     },
     { scope: root },
   )
 
   return (
     <div ref={root} className="v3-about">
-      <button className="v3-btn v3-label v3-close" onClick={onClose}>
-        ← PORTFOLIO
-      </button>
       <h1 className="v3-about__hi">{about.hi}</h1>
       <a className="v3-btn v3-label v3-about__mail" href={`mailto:${about.email}`}>
         E-MAIL
