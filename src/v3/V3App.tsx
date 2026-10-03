@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gsap, prefersReducedMotion } from '@/lib/gsap'
-import { back, navigate, usePath } from '@/lib/router'
+import { navigate, usePath } from '@/lib/router'
 import PixelCursor from '@/components/kit/pixel-cursor/PixelCursor'
 import { ABOUT_BG, HOME_BG, about, getProject, projects, type V3Project } from './content'
 import { AboutPage, ProjectPage } from './pages'
@@ -9,7 +9,7 @@ import './v3.css'
 
 const Keyring3D = lazy(() => import('./Keyring3D'))
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=DM+Mono:wght@400;500&display=swap'
+const FONTS = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=DM+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,100..900&display=swap'
 
 type Route = { page: 'home' } | { page: 'work'; id: string } | { page: 'about' }
 
@@ -60,7 +60,7 @@ export default function V3App() {
   const overlay = route.page === 'about' ? { key: 'about', color: ABOUT_BG } : project ? { key: project.id, color: project.bg } : null
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && back('/v3')
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && navigate('/v3')
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [route.page])
@@ -75,7 +75,8 @@ export default function V3App() {
     origin.current = e ? { x: e.clientX, y: e.clientY } : centre()
     navigate(path)
   }
-  const close = () => back('/v3')
+  // Straight home, not history.back(): after previous/next that would land on another project
+  const close = () => navigate('/v3')
 
   return (
     <div className="v3">
