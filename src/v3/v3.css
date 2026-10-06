@@ -1,13 +1,10 @@
 /* v3 · Keyring. Scoped to .v3 so the other versions keep their styles. Tokens: concept/theme.json (acrylic) */
 
 .v3 {
-  --paper: #05ff43;
+  --paper: #f2f1ef;
   --ink: #0a0a0a;
   --accent: #ffffff;
-  --mist: #efece4;
-  --muted: #075a1d;
   --display: 'Archivo', 'Arial Narrow', Arial, sans-serif;
-  --round: 'Unbounded', 'Arial Rounded MT Bold', Arial, sans-serif;
   --mono: 'DM Mono', ui-monospace, Menlo, monospace;
   --margin: 20px;
   --gutter: 20px;
@@ -40,23 +37,6 @@
   text-transform: uppercase;
 }
 
-/* Photocopy grain over everything */
-.v3-grain {
-  position: fixed;
-  inset: -50%;
-  z-index: 90;
-  pointer-events: none;
-  opacity: 0.16;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: v3-grain 0.6s steps(4) infinite;
-}
-@keyframes v3-grain {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(-3%, 2%); }
-  50% { transform: translate(2%, -3%); }
-  75% { transform: translate(-2%, -1%); }
-}
 
 /* Header: label pills */
 .v3-header {
@@ -79,48 +59,23 @@
   padding: 5px 9px 4px;
   transition: background-color 0.2s, rotate 0.2s, scale 0.2s;
 }
-.v3 .v3-pill--ink { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.v3-pill[aria-current] { background: var(--paper); }
+.v3 .v3-pill--ink { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+.v3-pill[aria-current] { background: var(--ink); color: var(--accent); }
 
 
-/* Home: the keyring stage stays put while the showreel scrolls over it */
+/* Home: one screen of paper with the keyring on it; only the charms carry colour */
 .v3-stage {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
-  transition: background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .v3-keyring__canvas { position: absolute !important; inset: 0; touch-action: none; } /* home doesn't scroll, so a finger can pull the charms */
-.v3-marquee {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  overflow: hidden;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-}
-.v3-marquee__track { display: inline-flex; animation: v3-marquee 60s linear infinite; }
-.v3-marquee__track span { padding-right: 0.3em; }
-@keyframes v3-marquee { to { transform: translateX(-50%); } }
-.v3-stage__marquee {
-  font-family: var(--round);
-  font-weight: 900;
-  font-size: 22vw;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
-  color: transparent;
-  -webkit-text-stroke: 2px var(--ink);
-}
 .v3-stage__hint { position: absolute; left: var(--margin); bottom: 18px; transition: opacity 0.3s; }
 .v3-stage.is-hovering .v3-stage__hint { opacity: 0; }
-.v3-caret { display: inline-block; width: 0.62em; height: 1.05em; vertical-align: -0.15em; background: var(--paper); margin-left: 1px; }
+.v3-caret { display: inline-block; width: 0.62em; height: 1.05em; vertical-align: -0.15em; background: var(--accent); margin-left: 1px; }
 .v3-fallback { position: absolute; inset: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; list-style: none; padding: 0; margin: 0; }
-.v3-fallback .v3-pill { font-family: var(--round); font-weight: 800; font-size: 28px; text-transform: uppercase; }
+.v3-fallback .v3-pill { font-family: var(--display); font-weight: 800; font-size: 28px; text-transform: uppercase; }
 
 /* Contact, always on the home screen */
 .v3-stage__corner { position: absolute; right: var(--margin); bottom: 18px; display: grid; gap: 6px; justify-items: end; }
@@ -128,7 +83,7 @@
 .v3-stage__info > * { background: var(--ink); color: var(--accent); padding: 5px 9px 4px; min-height: 1.4em; }
 .v3-stage__contact { display: flex; color: var(--ink); text-decoration: none; border: 1.5px solid var(--ink); background: var(--accent); transition: rotate 0.2s, scale 0.2s; }
 .v3-stage__contact > * { padding: 5px 9px 4px; min-height: 1.4em; }
-.v3-stage__contact > span:first-child { background: var(--ink); color: var(--paper); }
+.v3-stage__contact > span:first-child { background: var(--ink); color: var(--accent); }
 
 
 .v3-frame video, .v3-frame img, .v3-project__hero video { display: block; width: 100%; height: auto; }
@@ -197,6 +152,3 @@
   .v3 .v3-link:hover { text-decoration-color: transparent; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .v3-grain, .v3-marquee__track { animation: none; }
-}

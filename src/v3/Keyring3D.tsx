@@ -206,7 +206,9 @@ function faceGeometry(shape: THREE.Shape, image: { width: number; height: number
   return g
 }
 
-/** White sticker with the project name in the round display face */
+const STICKER_FONT = '500 64px "Inter Tight", Arial, sans-serif'
+
+/** White sticker with the project name in a grotesk, edged with a hairline */
 function labelTexture(title: string) {
   const canvas = document.createElement('canvas')
   canvas.width = 512
@@ -218,18 +220,19 @@ function labelTexture(title: string) {
     const ctx = canvas.getContext('2d')!
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, 512, 128)
-    ctx.lineWidth = 12
+    ctx.lineWidth = 3
     ctx.strokeStyle = '#0a0a0a'
-    ctx.strokeRect(6, 6, 500, 116)
+    ctx.strokeRect(1.5, 1.5, 509, 125)
     ctx.fillStyle = '#0a0a0a'
-    ctx.font = '800 62px Unbounded, "Arial Rounded MT Bold", sans-serif'
+    ctx.font = STICKER_FONT
+    ctx.letterSpacing = '-1.5px'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(title.toUpperCase(), 256, 68, 460)
+    ctx.fillText(title, 256, 62, 460)
     tex.needsUpdate = true
   }
   draw()
-  document.fonts?.load('800 62px Unbounded').then(draw).catch(() => {})
+  document.fonts?.load(STICKER_FONT).then(draw).catch(() => {})
   return tex
 }
 

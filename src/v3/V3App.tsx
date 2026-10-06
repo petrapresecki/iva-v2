@@ -4,13 +4,15 @@ import { navigate, usePath } from '@/lib/router'
 import PixelCursor from '@/components/kit/pixel-cursor/PixelCursor'
 import { ABOUT_BG, HOME_BG, about, getProject, projects, type Shape, type V3Project } from './content'
 import { AboutPage, ProjectPage } from './pages'
-import { Marquee, Print } from './ui'
+import { Print } from './ui'
+import cursor from './cursor-bw.svg'
+import cursorHover from './cursor-hover-bw.svg'
 import { coverSize, shapeClip } from './shapes'
 import './v3.css'
 
 const Keyring3D = lazy(() => import('./Keyring3D'))
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=DM+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,100..900&display=swap'
+const FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,100..900&family=Inter+Tight:wght@500&display=swap'
 
 type Route = { page: 'home' } | { page: 'work'; id: string } | { page: 'about' }
 
@@ -81,8 +83,7 @@ export default function V3App() {
 
   return (
     <div className="v3">
-      <div className="v3-grain" aria-hidden />
-      <PixelCursor interactive="a, button, [role='button'], [data-charm]" />
+      <PixelCursor src={cursor} hoverSrc={cursorHover} interactive="a, button, [role='button'], [data-charm]" />
 
       <header className="v3-header v3-label">
         <button className="v3-pill v3-pill--ink" onClick={() => route.page !== 'home' && close()}>
@@ -99,8 +100,7 @@ export default function V3App() {
       </header>
 
       <main>
-        <section className={`v3-stage ${hovered ? 'is-hovering' : ''}`} style={{ backgroundColor: hovered?.bg ?? HOME_BG }}>
-          <Marquee text={`${hovered ? hovered.title : 'PROJECTS'} ✺ `} className="v3-stage__marquee" />
+        <section className={`v3-stage ${hovered ? 'is-hovering' : ''}`}>
           {HAS_WEBGL ? (
             <Suspense fallback={null}>
               <Keyring3D
@@ -131,6 +131,7 @@ export default function V3App() {
           <div className="v3-stage__corner v3-label">
             {hovered && (
               <div className="v3-stage__info" key={hovered.id}>
+                <Print text={hovered.title.toUpperCase()} />
                 <span>{hovered.n} / 04</span>
                 <Print text={hovered.category} delay={60} />
                 <Print text={String(hovered.year)} delay={200} />

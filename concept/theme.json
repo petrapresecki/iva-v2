@@ -1,9 +1,9 @@
 {
   "id": "acrylic",
   "name": "Acrylic",
-  "description": "Electric green paper, black ink and white label pills; one flat flood colour per project, an outlined round display face on the home, mono caps in square ruled boxes everywhere else.",
+  "description": "Warm paper, black ink and white label pills; the charms are the only colour on the home, one flat flood colour per project page, mono caps in square ruled boxes.",
   "inspiredBy": ["lib-gass-rows", "lib-gass-color", "lib-an", "lib-k95-hover"],
-  "colors": { "paper": "#05ff43", "ink": "#0a0a0a", "accent": "#ffffff", "mist": "#efece4", "muted": "#075a1d" },
+  "colors": { "paper": "#f2f1ef", "ink": "#0a0a0a", "accent": "#ffffff", "mist": "#efece4", "muted": "#6f6e6a" },
   "palette": [
     { "name": "Rool orange", "value": "#ff5a00" },
     { "name": "Apuro blue", "value": "#2b2bff" },
@@ -14,11 +14,10 @@
   ],
   "fonts": {
     "sans": { "family": "DM Mono", "fallback": "ui-monospace, Menlo, monospace", "google": "DM+Mono:wght@400;500" },
-    "display": { "family": "Unbounded", "fallback": "'Arial Rounded MT Bold', Arial, sans-serif", "google": "Unbounded:wght@400..900" },
+    "display": { "family": "Inter Tight", "fallback": "Arial, sans-serif", "google": "Inter+Tight:wght@500" },
     "mono": { "family": "DM Mono", "fallback": "ui-monospace, Menlo, monospace", "google": "DM+Mono:wght@400;500" }
   },
   "type": [
-    { "name": "display", "size": "22vw", "leading": "1", "tracking": "-0.04em", "weight": 900 },
     { "name": "headline", "size": "clamp(64px, 13vw, 220px)", "leading": "0.92", "tracking": "-0.06em", "weight": 500 },
     { "name": "title", "size": "clamp(22px, 3vw, 44px)", "leading": "1", "tracking": "-0.04em", "weight": 500 },
     { "name": "lead", "size": "clamp(14px, 1.15vw, 17px)", "leading": "1.55", "tracking": "-0.01em", "weight": 400 },

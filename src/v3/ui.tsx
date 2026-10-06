@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { gsap, prefersReducedMotion } from '@/lib/gsap'
 import type { Media as MediaItem } from './content'
 
@@ -70,32 +70,4 @@ export function Media({ item, className }: { item: MediaItem; className?: string
 
   if (!isVideo) return <img src={item.src} alt={item.alt ?? ''} loading="lazy" className={className} />
   return <video ref={video} src={item.src} muted loop playsInline preload="metadata" className={className} />
-}
-
-/** Endless horizontal ticker (CSS, like the kit's marquee) at the same slow speed whatever the text */
-export function Marquee({ text, className, speed = 60 }: { text: string; className?: string; speed?: number }) {
-  const track = useRef<HTMLDivElement>(null)
-
-  // The track slides by half its width per loop, so the duration follows the text's length
-  useLayoutEffect(() => {
-    const measure = () => {
-      const el = track.current
-      if (el) el.style.animationDuration = `${el.scrollWidth / 2 / speed}s`
-    }
-    measure()
-    document.fonts?.ready.then(measure) // the display face changes the width once it loads
-  }, [text, speed])
-
-  // Two identical halves, so sliding the track by -50% loops seamlessly
-  return (
-    <div className={`v3-marquee ${className ?? ''}`}>
-      <div ref={track} className="v3-marquee__track">
-        {Array.from({ length: 12 }, (_, i) => (
-          <span key={i} aria-hidden={i > 0 || undefined}>
-            {text}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
 }

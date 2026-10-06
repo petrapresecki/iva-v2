@@ -149,6 +149,6 @@ export const about = {
 }
 
 export const ABOUT_BG = '#efece4'
-export const HOME_BG = '#05ff43'
+export const HOME_BG = '#f2f1ef'
 
 export const getProject = (id?: string) => projects.find(p => p.id === id)
