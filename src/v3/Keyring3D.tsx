@@ -26,7 +26,7 @@ export default function Keyring3D(props: KeyringProps) {
     >
       <Environment />
       <ambientLight intensity={0.35} />
-      {/* key light; on phones its soft shadows show which charm hangs in front of which */}
+      {/* key light; its soft shadows show which charm hangs in front of which */}
       <directionalLight
         position={[4, 6, 9]}
         intensity={1.6}
@@ -74,15 +74,15 @@ type Pt = { x: number; y: number; px: number; py: number; pinned?: boolean }
 type ChainPt = { x: number; y: number; z?: number } // a point as drawn, z in world units
 const pt = (x: number, y: number, pinned = false): Pt => ({ x, y, px: x, py: y, pinned })
 
-const ANGLES = [-62, -22, 22, 62].map(d => (d * Math.PI) / 180) // around the bottom of the ring, 0 = straight down
-// Chain lengths: on desktop the charms fan out side by side; on phones they hang at staggered heights
-const LINKS = [3, 7, 4, 8]
+const ANGLES = [-37, -13, 13, 37].map(d => (d * Math.PI) / 180) // around the bottom of the ring, 0 = straight down
+// Chain lengths: the charms hang at staggered heights, like a bunch of keys. Desktop charms are bigger
+// against the screen height, so their chains are a little shorter
+const LINKS = [2, 10, 5, 14]
 const LINKS_MOBILE = [3, 14, 7, 19]
-// Front-to-back order, in charm sizes. On phones the charms cascade, so the higher one hangs in front and no
-// name sticker is hidden. The layers are half a charm apart, so turned charms can't cut into each other
+// Front-to-back order, in charm sizes. The charms cascade, so the higher one hangs in front and no name
+// sticker is hidden. The layers are half a charm apart, so turned charms can't cut into each other
 // (each is scaled back to its on-screen size, see below)
-const DEPTH = [1, -0.35, 0.55, 0.1]
-const DEPTH_MOBILE = [1.35, 0.45, 0.9, 0]
+const DEPTH = [1.35, 0.45, 0.9, 0]
 const FACING = [0.28, -0.18, 0.12, -0.32] // and turn a little, so you read them as objects
 const MAX_TWIST = 0.45 // radians either side, which keeps a turned charm inside its depth layer
 const CAMERA_Z = 14
@@ -267,7 +267,7 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
     const charms: Charm[] = projects.map((p, i) => {
       const chain = [pt(ringC.x, ringC.y, true)]
       for (let j = 1; j <= (mobile ? LINKS_MOBILE : LINKS)[i]; j++) chain.push(pt(ringC.x, ringC.y + j * CSEG))
-      return { p, chain, angle: ANGLES[i] * (mobile ? 0.6 : 1), free: false, parked: false, twist: FACING[i], spin: 0 }
+      return { p, chain, angle: ANGLES[i], free: false, parked: false, twist: FACING[i], spin: 0 }
     })
     return { anchor, main, ringC, charms, ringAngle: 0, damp: DAMP, ptr: { x: -9999, y: -9999, vx: 0, vy: 0 }, dragging: null as Charm | null, hovered: null as Charm | null, downAt: { x: 0, y: 0 } }
   }, [W, H, SEG, CSEG, mobile])
@@ -357,9 +357,9 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
         const B = charms[b].chain[charms[b].chain.length - 1]
         const dx = B.x - A.x
         const d = Math.hypot(dx, B.y - A.y) || 1
-        const min = S * (mobile ? 0.62 : 0.9)
-        // on phones only charms hanging side by side push apart, so the staggered ones cascade like a bunch of keys
-        if (d < min && (!mobile || Math.abs(B.y - A.y) < S * 0.45)) {
+        const min = S * 0.62
+        // only charms hanging side by side push apart, so the staggered ones cascade like a bunch of keys
+        if (d < min && Math.abs(B.y - A.y) < S * 0.45) {
           const push = (min - d) * 0.07 * Math.sign(dx || 1)
           if (drag !== charms[a]) A.x -= push
           if (drag !== charms[b]) B.x += push
@@ -639,7 +639,7 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
       const tilt = Math.atan2(end.x - prev.x, end.y - prev.y) * 0.6 // tilt with the chain, but stay heavy-bottomed
       // moved along the line of sight to its depth layer and scaled to match, so it looks exactly
       // where and how big it would at z = 0, and still meets the end of its chain
-      const z = (mobile ? DEPTH_MOBILE : DEPTH)[i] * charmParts[i].s
+      const z = DEPTH[i] * charmParts[i].s
       const persp = (CAMERA_Z - z) / CAMERA_Z
       g.position.set(wx(end.x) * persp, wy(end.y) * persp, z)
       g.rotation.set(0, c.twist, tilt)
@@ -687,10 +687,10 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
             <mesh material={chrome} position={[0, s * 0.03, 0]} rotation={[0, Math.PI / 2, 0]}>
               <torusGeometry args={[s * 0.065, s * 0.016, 12, 32]} />
             </mesh>
-            {/* shadows only on phones, where the cascading charms need them to read as layers */}
-            <mesh geometry={part.body} material={acrylic} castShadow={mobile} receiveShadow={mobile} />
-            <mesh geometry={part.front} material={part.face} position={[0, 0, z]} receiveShadow={mobile} />
-            <mesh geometry={part.back} material={part.face} position={[0, 0, -z]} rotation={[0, Math.PI, 0]} receiveShadow={mobile} />
+            {/* shadows, so the cascading charms read as layers */}
+            <mesh geometry={part.body} material={acrylic} castShadow receiveShadow />
+            <mesh geometry={part.front} material={part.face} position={[0, 0, z]} receiveShadow />
+            <mesh geometry={part.back} material={part.face} position={[0, 0, -z]} rotation={[0, Math.PI, 0]} receiveShadow />
             {/* chrome grommet around the hole */}
             <mesh material={chrome} position={[0, -s * 0.085, 0]}>
               <torusGeometry args={[s * 0.045, s * 0.014, 12, 32]} />
