@@ -71,9 +71,10 @@ function Environment() {
 // ---------------------------------------------------------------------------
 
 type Pt = { x: number; y: number; px: number; py: number; pinned?: boolean }
+type ChainPt = { x: number; y: number; z?: number } // a point as drawn, z in world units
 const pt = (x: number, y: number, pinned = false): Pt => ({ x, y, px: x, py: y, pinned })
 
-const ANGLES = [-82, -28, 28, 82].map(d => (d * Math.PI) / 180) // around the bottom of the ring, 0 = straight down
+const ANGLES = [-62, -22, 22, 62].map(d => (d * Math.PI) / 180) // around the bottom of the ring, 0 = straight down
 // Chain lengths: on desktop the charms fan out side by side; on phones they hang at staggered heights
 const LINKS = [3, 7, 4, 8]
 const LINKS_MOBILE = [3, 14, 7, 19]
@@ -89,6 +90,11 @@ const G = 0.9
 const DAMP = 0.965
 const DAMP_HOVER = 0.88
 const RING_TILT = 0.45
+const WIRE = 0.15 // thickness of the ring's wire, in ring radii
+// The jump rings that hold each chain on the ring, in wire thicknesses: wide enough for the wire to pass through
+const JUMP_R = 1.75
+const JUMP_T = 0.32
+const JUMPS = 5 // one per charm, one for the main chain
 
 interface Charm {
   p: V3Project
@@ -266,10 +272,24 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
     return { anchor, main, ringC, charms, ringAngle: 0, damp: DAMP, ptr: { x: -9999, y: -9999, vx: 0, vy: 0 }, dragging: null as Charm | null, hovered: null as Charm | null, downAt: { x: 0, y: 0 } }
   }, [W, H, SEG, CSEG, mobile])
 
-  const rimPoint = (c: Charm) => {
-    const a = c.angle + rope.ringAngle
-    return { x: rope.ringC.x + Math.sin(a) * RING * Math.cos(RING_TILT), y: rope.ringC.y + Math.cos(a) * RING }
+  // The ring turns towards the main chain and wobbles about its vertical axis as it swings
+  const ringTilt = () => RING_TILT + gsap.utils.clamp(-0.5, 0.5, (rope.ringC.x - rope.ringC.px) * 0.04)
+
+  /** A point on the ring's wire, `angle` from its bottom: x/y in screen px, z in world units. Matches the ring mesh */
+  const ringAt = (angle: number) => {
+    const a = angle - rope.ringAngle
+    const t = ringTilt()
+    return { x: rope.ringC.x + Math.sin(a) * RING * Math.cos(t), y: rope.ringC.y + Math.cos(a) * RING, z: -Math.sin(a) * Math.sin(t) * RING * k }
   }
+
+  /** The wire's direction at that point, in world space */
+  const ringTangent = (angle: number, out: THREE.Vector3) => {
+    const a = angle - rope.ringAngle
+    const t = ringTilt()
+    return out.set(Math.cos(a) * Math.cos(t), Math.sin(a), -Math.cos(a) * Math.sin(t))
+  }
+
+  const rimPoint = (c: Charm) => ringAt(c.angle)
 
   const integrate = (p: Pt) => {
     if (p.pinned) return
@@ -485,6 +505,8 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
   const MAX_LINKS = 600
   const linkGeo = useMemo(() => new THREE.TorusGeometry(1, 0.34, 8, 18), [])
   const links = useRef<THREE.InstancedMesh>(null)
+  const jumpGeo = useMemo(() => new THREE.TorusGeometry(1, JUMP_T / JUMP_R, 12, 36), [])
+  const jumpRings = useRef<THREE.InstancedMesh>(null)
   const ring = useRef<THREE.Mesh>(null)
   const groups = useRef<(THREE.Group | null)[]>([])
   const lifts = useRef(projects.map(() => 1)) // the grab lift, kept apart from the depth scale
@@ -514,6 +536,10 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
   const Y = useMemo(() => new THREE.Vector3(0, 1, 0), [])
   const pos = useMemo(() => new THREE.Vector3(), [])
   const scl = useMemo(() => new THREE.Vector3(), [])
+  const jscl = useMemo(() => new THREE.Vector3(), [])
+  const tan = useMemo(() => new THREE.Vector3(), [])
+  const dir = useMemo(() => new THREE.Vector3(), [])
+  const side = useMemo(() => new THREE.Vector3(), [])
 
   const wx = (x: number) => (x - W / 2) * k
   const wy = (y: number) => -(y - H / 2) * k
@@ -522,39 +548,86 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
     const steps = reduced && !rope.dragging ? 0 : Math.min(3, Math.max(1, Math.round(dt * 60)))
     for (let i = 0; i < steps; i++) step()
 
-    // chain links along every segment, alternating flat and edge-on
+    const { ringC } = rope
+
     const mesh = links.current
-    if (mesh) {
+    const jumps = jumpRings.current
+    if (mesh && jumps) {
       let n = 0
+      let nj = 0
       const linkLen = S * 0.05
-      const place = (pts: Pt[]) => {
+      const r = linkLen * 0.62 * k
+      scl.set(r, r * 1.45, r)
+      const link = (x: number, y: number, z: number, ang: number, edgeOn: boolean) => {
+        if (n >= MAX_LINKS) return
+        pos.set(wx(x), wy(y), z)
+        qz.setFromAxisAngle(Z, ang)
+        qy.setFromAxisAngle(Y, edgeOn ? Math.PI / 2 : 0)
+        q.copy(qz).multiply(qy)
+        mesh.setMatrixAt(n++, m4.compose(pos, q, scl))
+      }
+      // links along a chain, alternately flat and edge-on so each one threads through the last
+      const place = (pts: ChainPt[]) => {
+        let m = 0
         for (let i = 1; i < pts.length; i++) {
           const a = pts[i - 1]
           const b = pts[i]
-          const len = Math.hypot(b.x - a.x, b.y - a.y)
-          const count = Math.max(1, Math.round(len / linkLen))
+          const az = a.z ?? 0
+          const bz = b.z ?? 0
+          const count = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / linkLen))
           const ang = Math.atan2(-(b.y - a.y), b.x - a.x) - Math.PI / 2
-          for (let j = 0; j < count && n < MAX_LINKS; j++) {
+          for (let j = 0; j < count; j++) {
             const t = (j + 0.5) / count
-            pos.set(wx(a.x + (b.x - a.x) * t), wy(a.y + (b.y - a.y) * t), 0)
-            qz.setFromAxisAngle(Z, ang)
-            qy.setFromAxisAngle(Y, (i * 7 + j) % 2 ? Math.PI / 2 : 0)
-            q.copy(qz).multiply(qy)
-            const r = linkLen * 0.62 * k
-            scl.set(r, r * 1.45, r)
-            mesh.setMatrixAt(n++, m4.compose(pos, q, scl))
+            link(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, az + (bz - az) * t, ang, m++ % 2 === 1)
           }
         }
       }
-      place(rope.main)
-      rope.charms.forEach(c => !c.parked && place(c.chain))
+
+      // Where a chain meets the ring it hangs from a jump ring: the wire runs through its hole and the
+      // chain pulls it against the wire. Returns the chain from the jump ring's far side outwards.
+      const wire = RING * WIRE
+      const jr = wire * JUMP_R
+      const reach = jr * 2 - wire * JUMP_T - wire // from the wire's centre to the far side of the jump ring
+      const hang = (angle: number, pts: ChainPt[]): ChainPt[] => {
+        const p = ringAt(angle)
+        let i = pts.findIndex(o => Math.hypot(o.x - p.x, o.y - p.y) > reach)
+        if (i < 0) i = pts.length - 1
+        const next = pts[i]
+        // hanging towards the chain, square to the wire
+        ringTangent(angle, tan)
+        dir.set((next.x - p.x) * k, -(next.y - p.y) * k, -p.z)
+        dir.addScaledVector(tan, -dir.dot(tan)).normalize()
+        side.crossVectors(dir, tan)
+        if (nj < JUMPS) {
+          const off = (jr - wire * JUMP_T - wire) * k
+          m4.makeBasis(side, dir, tan).scale(jscl.setScalar(jr * k))
+          m4.setPosition(wx(p.x) + dir.x * off, wy(p.y) + dir.y * off, p.z + dir.z * off)
+          jumps.setMatrixAt(nj++, m4)
+        }
+        const far = { x: p.x + dir.x * reach, y: p.y - dir.y * reach, z: p.z + dir.z * reach * k }
+        // the rest of the chain eases from the ring's depth back to the flat plane the rope lives in
+        const rest = pts.slice(i)
+        return [far, ...rest.map((o, j) => ({ x: o.x, y: o.y, z: far.z * (1 - (j + 1) / rest.length) }))]
+      }
+
+      // The rope ends at the ring's centre; the drawn chain stops where it reaches the ring and hooks over the top
+      const main = rope.main.slice(0, -1).reverse()
+      const out = main.findIndex(o => Math.hypot(o.x - ringC.x, o.y - ringC.y) > RING + wire)
+      place(hang(Math.PI, main.slice(Math.max(0, out))))
+
+      rope.charms.forEach(c => {
+        if (c.parked) return
+        place(c.free ? c.chain : hang(c.angle, c.chain.slice(1)))
+      })
       mesh.count = n
       mesh.instanceMatrix.needsUpdate = true
+      jumps.count = nj
+      jumps.instanceMatrix.needsUpdate = true
     }
 
     if (ring.current) {
-      ring.current.position.set(wx(rope.ringC.x), wy(rope.ringC.y), 0)
-      ring.current.rotation.set(0, RING_TILT + gsap.utils.clamp(-0.5, 0.5, (rope.ringC.x - rope.ringC.px) * 0.04), -rope.ringAngle)
+      ring.current.position.set(wx(ringC.x), wy(ringC.y), 0)
+      ring.current.rotation.set(0, ringTilt(), -rope.ringAngle)
     }
 
     rope.charms.forEach((c, i) => {
@@ -578,8 +651,9 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
   return (
     <>
       <instancedMesh ref={links} args={[linkGeo, chrome, MAX_LINKS]} frustumCulled={false} />
+      <instancedMesh ref={jumpRings} args={[jumpGeo, chrome, JUMPS]} frustumCulled={false} />
       <mesh ref={ring} material={chrome}>
-        <torusGeometry args={[RING * k, RING * k * 0.15, 24, 72]} />
+        <torusGeometry args={[RING * k, RING * k * WIRE, 24, 72]} />
       </mesh>
       {projects.map((p, i) => {
         const part = charmParts[i]
