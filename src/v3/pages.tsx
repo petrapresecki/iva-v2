@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { gsap, useGSAP, prefersReducedMotion } from '@/lib/gsap'
 import { about, projects, type V3Project } from './content'
 import { Media } from './ui'
+import { V3 } from './base'
 
 type Go = (path: string, e: React.MouseEvent) => void
 
@@ -61,14 +62,14 @@ export function ProjectPage({ project, onGo }: { project: V3Project; onGo: Go })
       </div>
       <nav className="v3-row v3-small v3-project__nav">
         {prev ? (
-          <button className="v3-link" onClick={e => onGo(`/v3/work/${prev.id}`, e)}>
+          <button className="v3-link" onClick={e => onGo(`${V3}/work/${prev.id}`, e)}>
             ← previous project
           </button>
         ) : (
           <span />
         )}
         {next && (
-          <button className="v3-link" onClick={e => onGo(`/v3/work/${next.id}`, e)}>
+          <button className="v3-link" onClick={e => onGo(`${V3}/work/${next.id}`, e)}>
             next project →
           </button>
         )}

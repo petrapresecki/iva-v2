@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "deploy": "VITE_V3_ROOT=1 pnpm build && pnpm dlx wrangler@4 pages deploy dist --project-name iva-presecki --branch main",
     "lint": "eslint .",
     "preview": "vite preview"
   },

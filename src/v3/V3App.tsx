@@ -8,6 +8,7 @@ import { Print } from './ui'
 import cursor from './cursor-bw.svg'
 import cursorHover from './cursor-hover-bw.svg'
 import { coverSize, shapeClip } from './shapes'
+import { V3, V3_HOME } from './base'
 import './v3.css'
 
 const Keyring3D = lazy(() => import('./Keyring3D'))
@@ -17,8 +18,8 @@ const FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&fam
 type Route = { page: 'home' } | { page: 'work'; id: string } | { page: 'about' }
 
 function parseV3(path: string): Route {
-  if (path.startsWith('/v3/about')) return { page: 'about' }
-  const work = path.match(/^\/v3\/work\/([^/]+)/)
+  if (path.startsWith(`${V3}/about`)) return { page: 'about' }
+  const work = path.slice(V3.length).match(/^\/work\/([^/]+)/)
   if (work && getProject(work[1])) return { page: 'work', id: work[1] }
   return { page: 'home' }
 }
@@ -63,7 +64,7 @@ export default function V3App() {
   const overlay: Target = route.page === 'about' ? { key: 'about', color: ABOUT_BG, shape: 'round' } : project ? { key: project.id, color: project.bg, shape: project.shape } : null
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && navigate('/v3')
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && navigate(V3_HOME)
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [route.page])
@@ -79,7 +80,7 @@ export default function V3App() {
     navigate(path)
   }
   // Straight home, not history.back(): after previous/next that would land on another project
-  const close = () => navigate('/v3')
+  const close = () => navigate(V3_HOME)
 
   return (
     <div className="v3">
@@ -93,7 +94,7 @@ export default function V3App() {
           <button className="v3-pill" aria-current={route.page !== 'about' ? 'page' : undefined} onClick={() => route.page !== 'home' && close()}>
             {route.page === 'home' ? 'PORTFOLIO' : '← PORTFOLIO'}
           </button>
-          <button className="v3-pill" aria-current={route.page === 'about' ? 'page' : undefined} onClick={e => go('/v3/about', e)}>
+          <button className="v3-pill" aria-current={route.page === 'about' ? 'page' : undefined} onClick={e => go(`${V3}/about`, e)}>
             ABOUT
           </button>
         </nav>
@@ -109,7 +110,7 @@ export default function V3App() {
                 onSnap={(p, x, y) => {
                   setHovered(null)
                   origin.current = { x, y }
-                  navigate(`/v3/work/${p.id}`)
+                  navigate(`${V3}/work/${p.id}`)
                 }}
               />
             </Suspense>
@@ -117,7 +118,7 @@ export default function V3App() {
             <ul className="v3-fallback">
               {projects.map(p => (
                 <li key={p.id}>
-                  <button className="v3-pill" onClick={e => go(`/v3/work/${p.id}`, e)}>
+                  <button className="v3-pill" onClick={e => go(`${V3}/work/${p.id}`, e)}>
                     {p.title}
                   </button>
                 </li>
