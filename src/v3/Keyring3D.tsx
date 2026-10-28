@@ -206,33 +206,68 @@ function faceGeometry(shape: THREE.Shape, image: { width: number; height: number
   return g
 }
 
-const STICKER_FONT = '500 64px "Inter Tight", Arial, sans-serif'
+const TAG_SIZE = 0.26 // tag width, and string length, as fractions of the charm size
+const TAG_STRING = 0.16
+const TAG_REST = 0.32 // how far off plumb each tag settles
 
-/** White sticker with the project name in a grotesk, edged with a hairline */
-function labelTexture(title: string) {
+const TAG_FONT = '500 66px "DM Mono", ui-monospace, Menlo, monospace'
+const TAG_SMALL = '400 26px "DM Mono", ui-monospace, Menlo, monospace'
+const TAG_W = 220
+const TAG_H = 440
+const TAG_HOLE = { x: TAG_W / 2, y: 46, r: 13 }
+
+/** Paper luggage tag: clipped top corners, a reinforced string hole, the name written down its length */
+function tagTexture(title: string, index: number) {
   const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 128
+  canvas.width = TAG_W
+  canvas.height = TAG_H
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 8
   const draw = () => {
     const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, 512, 128)
-    ctx.lineWidth = 3
-    ctx.strokeStyle = '#0a0a0a'
-    ctx.strokeRect(1.5, 1.5, 509, 125)
+    const c = 44 // corner clip
+    ctx.clearRect(0, 0, TAG_W, TAG_H)
+    ctx.beginPath()
+    ctx.moveTo(c, 2)
+    ctx.lineTo(TAG_W - c, 2)
+    ctx.lineTo(TAG_W - 2, c)
+    ctx.lineTo(TAG_W - 2, TAG_H - 2)
+    ctx.lineTo(2, TAG_H - 2)
+    ctx.lineTo(2, c)
+    ctx.closePath()
+    ctx.fillStyle = '#f7f5ef'
+    ctx.fill()
+    ctx.lineWidth = 2
+    ctx.strokeStyle = '#d8d4c8'
+    ctx.stroke()
+    // reinforcement ring, then the hole punched through
+    ctx.beginPath()
+    ctx.arc(TAG_HOLE.x, TAG_HOLE.y, TAG_HOLE.r + 11, 0, Math.PI * 2)
     ctx.fillStyle = '#0a0a0a'
-    ctx.font = STICKER_FONT
-    ctx.letterSpacing = '-1.5px'
-    ctx.textAlign = 'center'
+    ctx.fill()
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.beginPath()
+    ctx.arc(TAG_HOLE.x, TAG_HOLE.y, TAG_HOLE.r, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.fillStyle = '#0a0a0a'
     ctx.textBaseline = 'middle'
-    ctx.fillText(title, 256, 62, 460)
+    ctx.font = TAG_SMALL
+    ctx.textAlign = 'center'
+    ctx.fillText(`№${String(index + 1).padStart(2, '0')}`, TAG_W / 2, TAG_H - 34)
+    // the name, reading bottom to top
+    ctx.save()
+    ctx.translate(TAG_W / 2, (TAG_HOLE.y + 30 + TAG_H - 64) / 2)
+    ctx.rotate(-Math.PI / 2)
+    ctx.font = TAG_FONT
+    ctx.letterSpacing = '4px'
+    ctx.fillText(title.toUpperCase(), 0, 2, TAG_H - 150)
+    ctx.restore()
     tex.needsUpdate = true
   }
   draw()
-  document.fonts?.load(STICKER_FONT).then(draw).catch(() => {})
+  document.fonts?.load(TAG_FONT).then(draw).catch(() => {})
   return tex
 }
 
@@ -504,6 +539,7 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
 
   // ---- meshes ----
   const chrome = useMemo(() => new THREE.MeshStandardMaterial({ color: '#dcdcdc', metalness: 1, roughness: 0.16 }), [])
+  const stringMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#efece4', roughness: 1 }), [])
   const acrylic = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#0d0d0d', roughness: 0.22, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.08 }), [])
   const MAX_LINKS = 600
   const linkGeo = useMemo(() => new THREE.TorusGeometry(1, 0.34, 8, 18), [])
@@ -513,6 +549,8 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
   const ring = useRef<THREE.Mesh>(null)
   const groups = useRef<(THREE.Group | null)[]>([])
   const lifts = useRef(projects.map(() => 1)) // the grab lift, kept apart from the depth scale
+  const tags = useRef<(THREE.Group | null)[]>([])
+  const swings = useRef(projects.map(() => ({ a: 0, v: 0 }))) // each tag swings on its string, lagging its charm
 
   const charmParts = useMemo(() => {
     const s = S * k
@@ -526,7 +564,7 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
       const front = faceGeometry(shape, image, false)
       const back = faceGeometry(shape, image, true)
       const face = new THREE.MeshPhysicalMaterial({ map: textures[i], roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.06 })
-      const label = new THREE.MeshBasicMaterial({ map: labelTexture(p.title), toneMapped: false })
+      const label = new THREE.MeshStandardMaterial({ map: tagTexture(p.title, i), roughness: 0.92, alphaTest: 0.5, side: THREE.DoubleSide })
       return { s, h, z: depth / 2 + bevel + 0.004, body, front, back, face, label }
     })
   }, [S, k, textures])
@@ -648,6 +686,16 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
       g.rotation.set(0, c.twist, tilt)
       lifts.current[i] = THREE.MathUtils.lerp(lifts.current[i], rope.dragging === c ? 1.06 : 1, 0.2)
       g.scale.setScalar(lifts.current[i] * persp)
+      // the tag hangs plumb (against the charm's tilt), leaning away from the ring so the tags fan out, and swings into place
+      const tag = tags.current[i]
+      if (tag) {
+        const sw = swings.current[i]
+        const target = -tilt + (end.x < ringC.x ? -TAG_REST : TAG_REST)
+        if (reduced) sw.a = target
+        sw.v = (sw.v + (target - sw.a) * 0.06) * 0.9
+        sw.a += sw.v
+        tag.rotation.z = sw.a
+      }
     })
   })
 
@@ -660,7 +708,7 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
       </mesh>
       {projects.map((p, i) => {
         const part = charmParts[i]
-        const { s, h, z } = part
+        const { s, z } = part
         return (
           <group
             key={p.id}
@@ -698,13 +746,20 @@ function Rig({ detached, onHover, onSnap }: KeyringProps) {
             <mesh material={chrome} position={[0, -s * 0.085, 0]}>
               <torusGeometry args={[s * 0.045, s * 0.014, 12, 32]} />
             </mesh>
-            {/* name stickers, front and back */}
-            <mesh material={part.label} position={[s * 0.04, -h + s * 0.09, z + 0.004]} rotation={[0, 0, -0.07]}>
-              <planeGeometry args={[s * 0.62, s * 0.155]} />
-            </mesh>
-            <mesh material={part.label} position={[-s * 0.04, -h + s * 0.09, -z - 0.004]} rotation={[0, Math.PI, 0.07]}>
-              <planeGeometry args={[s * 0.62, s * 0.155]} />
-            </mesh>
+            {/* paper name tag on its own string, tied to the jump ring in front of the charm */}
+            <group
+              ref={el => {
+                tags.current[i] = el
+              }}
+              position={[0, s * 0.03, z + s * 0.012]}
+            >
+              <mesh material={stringMat} position={[0, -s * TAG_STRING / 2, 0]} castShadow>
+                <cylinderGeometry args={[s * 0.0045, s * 0.0045, s * TAG_STRING, 6]} />
+              </mesh>
+              <mesh material={part.label} position={[0, -s * TAG_STRING - s * TAG_SIZE * (TAG_H / TAG_W / 2 - TAG_HOLE.y / TAG_W), 0]} castShadow receiveShadow>
+                <planeGeometry args={[s * TAG_SIZE, s * TAG_SIZE * (TAG_H / TAG_W)]} />
+              </mesh>
+            </group>
           </group>
         )
       })}
