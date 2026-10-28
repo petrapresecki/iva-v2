@@ -1,5 +1,7 @@
 # Iva Presečki
 
+![Iva's keyring: charms sway on their chains and a pulled one opens its project](docs/preview.gif)
+
 Portfolio for Iva Presečki, a graphic designer working across branding, packaging, motion and 3D. Live at [iva-presecki.pages.dev](https://iva-presecki.pages.dev/).
 
 The portfolio is a keyring. Her four projects hang from one chrome ring as charms; pull one until the clip snaps and the project floods open in its own colours. The concept is in [concept/CONCEPT.md](concept/CONCEPT.md), with the 2D paper prototype it started from.
