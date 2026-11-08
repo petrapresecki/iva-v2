@@ -4,7 +4,7 @@ import { about, projects, type V3Project } from './content'
 import { Media } from './ui'
 import { V3 } from './base'
 
-type Go = (path: string, e: React.MouseEvent) => void
+type Go = (path: string) => void
 
 export function ProjectPage({ project, onGo }: { project: V3Project; onGo: Go }) {
   const root = useRef<HTMLDivElement>(null)
@@ -62,14 +62,14 @@ export function ProjectPage({ project, onGo }: { project: V3Project; onGo: Go })
       </div>
       <nav className="v3-row v3-small v3-project__nav">
         {prev ? (
-          <button className="v3-link" onClick={e => onGo(`${V3}/work/${prev.id}`, e)}>
+          <button className="v3-link" onClick={() => onGo(`${V3}/work/${prev.id}`)}>
             ← previous project
           </button>
         ) : (
           <span />
         )}
         {next && (
-          <button className="v3-link" onClick={e => onGo(`${V3}/work/${next.id}`, e)}>
+          <button className="v3-link" onClick={() => onGo(`${V3}/work/${next.id}`)}>
             next project →
           </button>
         )}

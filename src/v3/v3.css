@@ -31,36 +31,32 @@
 
 .v3-label {
   font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.35;
-  letter-spacing: 0.05em;
+  font-size: 10px;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 
-/* Header: label pills */
+/* Header: one quiet line of small type across the top */
 .v3-header {
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 70;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px var(--margin);
+  display: grid;
+  grid-template-columns: 2fr 1fr 4fr 2fr auto;
+  gap: var(--gutter);
+  align-items: start;
+  padding: 18px var(--margin);
   pointer-events: none;
+  transition: color 0.3s;
 }
 .v3-header > * { pointer-events: auto; }
-.v3-nav { display: flex; gap: 6px; }
-.v3-pill {
-  display: inline-block;
-  background: var(--accent);
-  color: var(--ink);
-  border: 1.5px solid var(--ink);
-  padding: 5px 9px 4px;
-  transition: background-color 0.2s, rotate 0.2s, scale 0.2s;
-}
-.v3 .v3-pill--ink { background: var(--ink); color: var(--accent); border-color: var(--ink); }
-.v3-pill[aria-current] { background: var(--ink); color: var(--accent); }
+.v3-header__name { font-weight: 500; text-align: left; }
+.v3-header__col { opacity: 0.55; }
+.v3-header__services { opacity: 1; }
+.v3-header__based { justify-self: end; }
+.v3-nav { display: flex; gap: 16px; justify-self: end; }
 
 
 /* Home: one screen of paper with the keyring on it; only the charms carry colour */
@@ -71,19 +67,18 @@
   overflow: hidden;
 }
 .v3-keyring__canvas { position: absolute !important; inset: 0; touch-action: none; } /* home doesn't scroll, so a finger can pull the charms */
-.v3-stage__hint { position: absolute; left: var(--margin); bottom: 18px; transition: opacity 0.3s; }
+.v3-stage__hint { position: absolute; left: var(--margin); bottom: 18px; margin: 0; opacity: 0.55; transition: opacity 0.3s; }
 .v3-stage.is-hovering .v3-stage__hint { opacity: 0; }
-.v3-caret { display: inline-block; width: 0.62em; height: 1.05em; vertical-align: -0.15em; background: var(--accent); margin-left: 1px; }
-.v3-fallback { position: absolute; inset: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; list-style: none; padding: 0; margin: 0; }
-.v3-fallback .v3-pill { font-family: var(--display); font-weight: 800; font-size: 28px; text-transform: uppercase; }
+.v3-caret { display: inline-block; width: 0.55em; height: 1em; vertical-align: -0.12em; background: currentColor; margin-left: 1px; }
+.v3-fallback { position: absolute; inset: 0; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: center; list-style: none; padding: 0; margin: 0; }
+.v3-fallback__item { font-family: var(--mono); font-size: 13px; text-transform: uppercase; }
 
-/* Contact, always on the home screen */
-.v3-stage__corner { position: absolute; right: var(--margin); bottom: 18px; display: grid; gap: 6px; justify-items: end; }
-.v3-stage__info { display: grid; gap: 6px; justify-items: end; }
-.v3-stage__info > * { background: var(--ink); color: var(--accent); padding: 5px 9px 4px; min-height: 1.4em; }
-.v3-stage__contact { display: flex; color: var(--ink); text-decoration: none; border: 1.5px solid var(--ink); background: var(--accent); transition: rotate 0.2s, scale 0.2s; }
-.v3-stage__contact > * { padding: 5px 9px 4px; min-height: 1.4em; }
-.v3-stage__contact > span:first-child { background: var(--ink); color: var(--accent); }
+/* Bottom right: the hovered charm's details, and contact */
+.v3-stage__corner { position: absolute; right: var(--margin); bottom: 18px; display: grid; gap: 14px; justify-items: end; text-align: right; }
+.v3-stage__info { display: grid; gap: 2px; justify-items: end; }
+.v3-stage__info > * { min-height: 1.3em; }
+.v3-stage__contact { display: flex; gap: 24px; color: var(--ink); text-decoration: none; }
+.v3-stage__contact > span:first-child { opacity: 0.55; }
 
 
 .v3-frame video, .v3-frame img, .v3-project__hero video { display: block; width: 100%; height: auto; }
@@ -133,11 +128,12 @@
   .v3-about__ex { flex-direction: column; }
   .v3-gallery, .v3-gallery__row { gap: 18px; }
   .v3-gallery__row.is-pair { display: grid; }
-  .v3-stage__hint { bottom: 52px; }
-  .v3-stage__corner { left: var(--margin); right: var(--margin); justify-items: start; }
+  .v3-hide-sm { display: none; }
+  .v3-header { grid-template-columns: 1fr auto; }
+  .v3-stage__hint { bottom: 44px; }
+  .v3-stage__corner { left: var(--margin); right: var(--margin); justify-items: start; text-align: left; }
   .v3-stage__info { justify-items: start; }
-  .v3-stage__contact { width: 100%; }
-  .v3-stage__contact > *:last-child { flex: 1; }
+  .v3-stage__contact { gap: 16px; }
 }
 
 /* Hover effects only where there is a real hover (a tap would leave them stuck) */
@@ -147,8 +143,7 @@
   .v3-only-touch { display: inline; }
 }
 @media (hover: hover) {
-  .v3-nav .v3-pill:hover { rotate: -3deg; scale: 1.05; }
-  .v3-stage__contact:hover { rotate: -2deg; scale: 1.04; }
+  .v3-header button:hover, .v3-stage__contact:hover .v3-stage__email { text-decoration: underline; text-underline-offset: 0.2em; }
   .v3 .v3-link:hover { text-decoration-color: transparent; }
 }
 

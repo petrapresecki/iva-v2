@@ -2,12 +2,11 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 're
 import { gsap, prefersReducedMotion } from '@/lib/gsap'
 import { navigate, usePath } from '@/lib/router'
 import PixelCursor from '@/components/kit/pixel-cursor/PixelCursor'
-import { ABOUT_BG, HOME_BG, about, getProject, projects, type Shape, type V3Project } from './content'
+import { ABOUT_BG, HOME_BG, about, getProject, projects, type V3Project } from './content'
 import { AboutPage, ProjectPage } from './pages'
 import { Print } from './ui'
 import cursor from './cursor-bw.svg'
 import cursorHover from './cursor-hover-bw.svg'
-import { coverSize, shapeClip } from './shapes'
 import { V3, V3_HOME } from './base'
 import './v3.css'
 
@@ -24,8 +23,6 @@ function parseV3(path: string): Route {
   return { page: 'home' }
 }
 
-type Origin = { x: number; y: number }
-const centre = (): Origin => ({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
 // Checked once: every getContext() call creates a WebGL context, and browsers drop the
 // oldest (the keyring's) once there are too many
 const HAS_WEBGL = (() => {
@@ -42,7 +39,6 @@ export default function V3App() {
   const route = parseV3(usePath())
   const project = route.page === 'work' ? getProject(route.id) : undefined
   const [hovered, setHovered] = useState<V3Project | null>(null)
-  const origin = useRef<Origin | null>(null)
 
   // Fonts and page colour belong to this version only
   useEffect(() => {
@@ -61,7 +57,9 @@ export default function V3App() {
     }
   }, [])
 
-  const overlay: Target = route.page === 'about' ? { key: 'about', color: ABOUT_BG, shape: 'round' } : project ? { key: project.id, color: project.bg, shape: project.shape } : null
+  const overlay: Target = route.page === 'about' ? { key: 'about', color: ABOUT_BG } : project ? { key: project.id, color: project.bg } : null
+  // the header takes the ink of whatever page it sits on
+  const headerInk = project && route.page === 'work' ? project.ink : 'var(--ink)'
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && route.page !== 'home' && navigate(V3_HOME)
@@ -69,16 +67,7 @@ export default function V3App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [route.page])
 
-  const takeOrigin = () => {
-    const o = origin.current ?? centre()
-    origin.current = null
-    return o
-  }
-
-  const go = (path: string, e?: React.MouseEvent) => {
-    origin.current = e ? { x: e.clientX, y: e.clientY } : centre()
-    navigate(path)
-  }
+  const go = (path: string) => navigate(path)
   // Straight home, not history.back(): after previous/next that would land on another project
   const close = () => navigate(V3_HOME)
 
@@ -86,17 +75,23 @@ export default function V3App() {
     <div className="v3">
       <PixelCursor src={cursor} hoverSrc={cursorHover} interactive="a, button, [role='button'], [data-charm]" />
 
-      <header className="v3-header v3-label">
-        <button className="v3-pill v3-pill--ink" onClick={() => route.page !== 'home' && close()}>
+      <header className="v3-header v3-label" style={{ color: headerInk }}>
+        <button className="v3-header__name" onClick={() => route.page !== 'home' && close()}>
           IVA PRESEČKI
         </button>
+        <span className="v3-header__col v3-hide-sm">SERVICES</span>
+        <span className="v3-header__col v3-header__services v3-hide-sm">
+          BRANDING, VISUAL IDENTITY, PACKAGING,
+          <br />
+          EDITORIAL, 3D, ANIMATION
+        </span>
+        <span className="v3-header__col v3-header__based v3-hide-sm">BASED IN ZAGREB</span>
         <nav className="v3-nav">
-          <button className="v3-pill" aria-current={route.page !== 'about' ? 'page' : undefined} onClick={() => route.page !== 'home' && close()}>
-            {route.page === 'home' ? 'PORTFOLIO' : '← PORTFOLIO'}
-          </button>
-          <button className="v3-pill" aria-current={route.page === 'about' ? 'page' : undefined} onClick={e => go(`${V3}/about`, e)}>
-            ABOUT
-          </button>
+          {route.page === 'home' ? (
+            <button onClick={() => go(`${V3}/about`)}>INFO</button>
+          ) : (
+            <button onClick={close}>CLOSE</button>
+          )}
         </nav>
       </header>
 
@@ -107,9 +102,8 @@ export default function V3App() {
               <Keyring3D
                 detached={project?.id}
                 onHover={setHovered}
-                onSnap={(p, x, y) => {
+                onSnap={p => {
                   setHovered(null)
-                  origin.current = { x, y }
                   navigate(`${V3}/work/${p.id}`)
                 }}
               />
@@ -118,40 +112,40 @@ export default function V3App() {
             <ul className="v3-fallback">
               {projects.map(p => (
                 <li key={p.id}>
-                  <button className="v3-pill" onClick={e => go(`${V3}/work/${p.id}`, e)}>
+                  <button className="v3-fallback__item" onClick={() => go(`${V3}/work/${p.id}`)}>
                     {p.title}
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          <p className="v3-stage__hint v3-label v3-pill">
+          <p className="v3-stage__hint v3-label">
             <span className="v3-only-hover">GRAB A CHARM · PULL IT OFF THE RING</span>
             <span className="v3-only-touch">TAP OR PULL A CHARM</span>
           </p>
           <div className="v3-stage__corner v3-label">
             {hovered && (
               <div className="v3-stage__info" key={hovered.id}>
+                <span>{hovered.n}.</span>
                 <Print text={hovered.title.toUpperCase()} />
-                <span>{hovered.n} / 04</span>
-                <Print text={hovered.category} delay={60} />
+                <Print text={hovered.category.toUpperCase()} delay={60} />
                 <Print text={String(hovered.year)} delay={200} />
               </div>
             )}
             <a className="v3-stage__contact" href={`mailto:${about.email}`}>
-              <span>Contact</span>
-              <Print text={about.email} delay={1400} charDelay={30} />
+              <span>CONTACT</span>
+              <span className="v3-stage__email">{about.email.toUpperCase()}</span>
             </a>
           </div>
         </section>
       </main>
 
-      <Flood target={overlay} takeOrigin={takeOrigin}>
+      <Flood target={overlay}>
         {key =>
           key === 'about' ? (
             <AboutPage />
           ) : (
-            <ProjectPage key={key} project={getProject(key)!} onGo={(path, e) => go(path, e)} />
+            <ProjectPage key={key} project={getProject(key)!} onGo={go} />
           )
         }
       </Flood>
@@ -159,17 +153,15 @@ export default function V3App() {
   )
 }
 
-type Target = { key: string; color: string; shape: Shape } | null
+type Target = { key: string; color: string } | null
 
 /**
- * Flat colour that floods out from where you clicked (or where the charm snapped off), cut
- * in the shape of that project's charm, and holds the project or about page; closing
- * shrinks it back.
+ * The project or about page, on its own flat colour, fading in over the keyring; closing
+ * fades it back out.
  */
-function Flood({ target, takeOrigin, children }: { target: Target; takeOrigin: () => Origin; children: (key: string) => React.ReactNode }) {
+function Flood({ target, children }: { target: Target; children: (key: string) => React.ReactNode }) {
   const el = useRef<HTMLDivElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
-  const from = useRef<Origin>(centre())
   const [under, setUnder] = useState<string | null>(null)
 
   // Keep showing the last page while the flood closes
@@ -186,47 +178,24 @@ function Flood({ target, takeOrigin, children }: { target: Target; takeOrigin: (
   useLayoutEffect(() => {
     const node = el.current
     if (!node || !target) return
-    const o = takeOrigin()
-    from.current = o
     if (scroller.current) scroller.current.scrollTop = 0
     if (prefersReducedMotion()) {
-      gsap.set(node, { clipPath: 'none' })
+      gsap.set(node, { opacity: 1 })
       gsap.delayedCall(0, () => setUnder(null))
       return
     }
-    const { shape } = target
-    const grow = { size: 0 }
-    node.style.clipPath = shapeClip(shape, o.x, o.y, 0)
-    const tween = gsap.to(grow, {
-      size: coverSize(shape, o.x, o.y),
-      duration: 0.95,
-      ease: 'expo.out',
-      onUpdate: () => void (node.style.clipPath = shapeClip(shape, o.x, o.y, grow.size)),
-      onComplete: () => {
-        node.style.clipPath = 'none' // a full-screen polygon would still cost every scroll frame
-        setUnder(null)
-      },
-    })
+    const tween = gsap.fromTo(node, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out', onComplete: () => setUnder(null) })
     return () => void tween.kill()
   }, [target?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     const node = el.current
     if (!node || !closing) return
-    const o = from.current
     if (prefersReducedMotion()) {
       gsap.delayedCall(0, () => setClosing(null))
       return
     }
-    const { shape } = closing
-    const shrink = { size: coverSize(shape, o.x, o.y) }
-    const tween = gsap.to(shrink, {
-      size: 0,
-      duration: 0.65,
-      ease: 'expo.inOut',
-      onUpdate: () => void (node.style.clipPath = shapeClip(shape, o.x, o.y, shrink.size)),
-      onComplete: () => setClosing(null),
-    })
+    const tween = gsap.to(node, { opacity: 0, duration: 0.4, ease: 'power2.inOut', onComplete: () => setClosing(null) })
     return () => void tween.kill()
   }, [closing])
 
