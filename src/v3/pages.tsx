@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { gsap, useGSAP, prefersReducedMotion } from '@/lib/gsap'
 import { about, projects, type V3Project } from './content'
-import { Media } from './ui'
+import { Media, Video } from './ui'
 import { V3 } from './base'
 
 type Go = (path: string) => void
@@ -41,7 +41,7 @@ export function ProjectPage({ project, onGo }: { project: V3Project; onGo: Go })
         <span>{project.tools.join(', ')}</span>
       </div>
       <div className="v3-project__hero">
-        <video src={project.hero} autoPlay muted loop playsInline />
+        <Video src={project.hero} preload="auto" />
       </div>
       <div className="v3-project__desc v3-text">
         {project.desc.map(t => (

@@ -51,12 +51,23 @@ export function Print({ text, delay = 0, charDelay = 18, className }: { text: st
 
 /** Image or muted looping video; videos only play near the viewport (the kit's lazy-video) */
 export function Media({ item, className }: { item: MediaItem; className?: string }) {
-  const video = useRef<HTMLVideoElement>(null)
   const isVideo = item.src.endsWith('.mp4')
+  if (!isVideo) return <img src={item.src} alt={item.alt ?? ''} loading="lazy" className={className} />
+  return <Video src={item.src} className={className} />
+}
+
+/** Muted looping video that plays only near the viewport */
+export function Video({ src, className, preload = 'metadata' }: { src: string; className?: string; preload?: 'metadata' | 'auto' }) {
+  const video = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     const el = video.current
     if (!el) return
+    // React sets muted only as a property, never the attribute, and iOS Safari won't
+    // autoplay a video without it
+    el.muted = true
+    el.defaultMuted = true
+    el.setAttribute('muted', '')
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) el.play().catch(() => {})
@@ -66,8 +77,7 @@ export function Media({ item, className }: { item: MediaItem; className?: string
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [item.src])
+  }, [src])
 
-  if (!isVideo) return <img src={item.src} alt={item.alt ?? ''} loading="lazy" className={className} />
-  return <video ref={video} src={item.src} muted loop playsInline preload="metadata" className={className} />
+  return <video ref={video} src={src} muted loop playsInline preload={preload} className={className} />
 }
